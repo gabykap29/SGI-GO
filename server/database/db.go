@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sgi-go/config"
+	department "sgi-go/department/models"
 	model_user "sgi-go/users/models"
 
 	"gorm.io/driver/postgres"
@@ -27,7 +28,7 @@ func Connect() {
 
 	}
 	//migrar modelos
-	err = DB.AutoMigrate(&model_user.User{})
+	err = DB.AutoMigrate(&model_user.User{}, &department.Department{})
 	if err != nil {
 		log.Fatalf("Failed to migrate models: %v", err)
 	}
