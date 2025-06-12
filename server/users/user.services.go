@@ -23,7 +23,7 @@ func CreateUser(user *model_user.User) (*model_user.User, error) {
 		return nil, err
 	}
 	user.Pass = hashPass
-	result := database.DB.Create(user)
+	result := database.DB.Create(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}

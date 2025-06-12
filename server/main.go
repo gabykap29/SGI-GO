@@ -5,6 +5,7 @@ import (
 	"sgi-go/database"
 	departments "sgi-go/department"
 	"sgi-go/locality"
+	"sgi-go/persons"
 	typereport "sgi-go/typeReport"
 	"sgi-go/users"
 
@@ -21,6 +22,7 @@ func main() {
 	departments.DepartmentRoutes(apiGroup)
 	locality.LocalityRoutes(apiGroup)
 	typereport.TypeReportRouter(apiGroup)
+	persons.PersonRouter((apiGroup))
 	if err := departments.CreateDepartments(); err != nil {
 		log.Println("error al crear los departamentos", err)
 	}
