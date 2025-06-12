@@ -1,7 +1,7 @@
 package users
 
 import (
-	model_user "sgi-go/users/models"
+	model_user "sgi-go/entities"
 
 	"github.com/gin-gonic/gin"
 )

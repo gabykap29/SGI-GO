@@ -3,8 +3,9 @@ package departments
 import (
 	"errors"
 	"log"
+
 	"sgi-go/database"
-	department "sgi-go/department/models"
+	department "sgi-go/entities"
 )
 
 func GetDeparts() ([]department.Department, error) {
@@ -17,9 +18,16 @@ func GetDeparts() ([]department.Department, error) {
 }
 
 func CreateDepartments() error {
-	var list_departments []string = []string{"FORMOSA", "PILCOMAYO", "PIRANE",
-		"LAISHI", "PILAGAS", "PATIÑO", "BERMEJO",
-		"RAMON LISTA", "MATACOS"}
+	var list_departments []string = []string{
+		"Formosa",
+		"Pilcomayo",
+		"Pilagás",
+		"Bermejo",
+		"Pirané",
+		"Laishi",
+		"Patiño",
+		"Ramon_Lista",
+		"Matacos"}
 
 	var count int64
 

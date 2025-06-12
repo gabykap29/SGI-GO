@@ -1,7 +1,7 @@
 package departments
 
 import (
-	department "sgi-go/department/models"
+	department "sgi-go/entities"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +27,7 @@ func DepartmentRoutes(r *gin.RouterGroup) {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(200, result)
+		c.JSON(201, result)
 
 	})
 	r.PUT("/departments/:id", func(c *gin.Context) {

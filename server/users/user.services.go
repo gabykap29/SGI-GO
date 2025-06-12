@@ -2,7 +2,7 @@ package users
 
 import (
 	"sgi-go/database"
-	model_user "sgi-go/users/models"
+	model_user "sgi-go/entities"
 	"sgi-go/utils"
 )
 
