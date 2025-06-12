@@ -11,4 +11,5 @@ type User struct {
 	Role      string    `json:"role" gorm:"not null;default:'user'"` // Default role is 'user'
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	Reports   []Report  `json:"reports" gorm:"foreignKey:UserID"`
 }

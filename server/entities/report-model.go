@@ -18,4 +18,6 @@ type Report struct {
 	Files        []File     `json:"files" gorm:"foreignKey:ReportID"`
 	Description  string     `json:"description"`
 	Persons      []Person   `json:"persons" gorm:"many2many:person_report;"`
+	UserID       uint       `json:"user_id"`
+	User         User       `json:"user" gorm:"foreignKey:UserID"`
 }
