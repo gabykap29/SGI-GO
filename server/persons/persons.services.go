@@ -21,6 +21,7 @@ func EditPerson(id string, person *entities.Person) (*entities.Person, error) {
 	if person.Name == "" || person.LastName == "" || person.Dni == "" || person.Address == "" || person.Locality == "" || person.Province == "" {
 		return nil, errors.New("El nombre, apellido, dni, dirección, localidad y provincia son obligatorios")
 	}
+
 	result := database.DB.Model(&entities.Person{}).Where("id=?", id).Updates(&person)
 	if result.Error != nil {
 		return nil, result.Error
