@@ -12,4 +12,5 @@ type User struct {
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	Reports   []Report  `json:"reports" gorm:"foreignKey:UserID"`
+	LastLogin time.Time `json:"last_login" `
 }

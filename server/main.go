@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sgi-go/auth"
 	"sgi-go/database"
 	departments "sgi-go/department"
 	"sgi-go/files"
@@ -27,6 +28,7 @@ func main() {
 	persons.PersonRouter((apiGroup))
 	reports.ReportRouter(apiGroup)
 	files.RegisterFileRoutes(apiGroup)
+	auth.AuthRoutes(apiGroup)
 
 	if err := departments.CreateDepartments(); err != nil {
 		log.Println("error al crear los departamentos", err)
