@@ -58,7 +58,7 @@ func GetReports(query *query, page int64, limit int64) ([]entities.Report, int64
 
 func GetReportById(id int64) (*entities.Report, error) {
 	var report entities.Report
-	result := database.DB.Preload("Department").Preload("Locality").Preload("TypeReport").Preload("TypeReport").Preload("Persons").Preload("User", func(db *gorm.DB) *gorm.DB {
+	result := database.DB.Preload("Department").Preload("Locality").Preload("TypeReport").Preload("TypeReport").Preload("Persons").Preload("Files").Preload("User", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id", "username")
 	}).First(&report, id)
 	if result.Error != nil {

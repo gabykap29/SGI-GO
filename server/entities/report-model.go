@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// asdasdasdasd
 type Report struct {
 	ID           uint       `json:"id" gorm:"primaryKey"`
 	DepartmentID uint       `json:"department_id" binding:"required"`
@@ -18,7 +17,7 @@ type Report struct {
 	Content      string     `json:"content" gorm:"not null" binding:"required"`
 	Files        []File     `json:"files" gorm:"foreignKey:ReportID"`
 	Description  string     `json:"description"`
-	Persons      []Person   `json:"persons" gorm:"many2many:person_report;"`
+	Persons      []Person   `json:"persons" gorm:"many2many:person_report;joinForeignKey:ReportID;joinReferences:PersonID"`
 	UserID       uint       `json:"user_id"`
-	User         User       `json:"-" gorm:"foreignKey:UserID" binding:"-"`
+	User         User       `json:"-" gorm:"foreignKey:UserID;references:ID" binding:"-"`
 }
