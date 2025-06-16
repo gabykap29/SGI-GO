@@ -7,6 +7,7 @@ import (
 	departments "sgi-go/department"
 	"sgi-go/files"
 	"sgi-go/locality"
+	"sgi-go/middlewares"
 	"sgi-go/persons"
 	"sgi-go/reports"
 	typereport "sgi-go/typeReport"
@@ -20,15 +21,21 @@ func main() {
 
 	r := gin.Default()
 
-	apiGroup := r.Group("/api/")
-	users.GetUser(apiGroup)
-	departments.DepartmentRoutes(apiGroup)
-	locality.LocalityRoutes(apiGroup)
-	typereport.TypeReportRouter(apiGroup)
-	persons.PersonRouter((apiGroup))
-	reports.ReportRouter(apiGroup)
-	files.RegisterFileRoutes(apiGroup)
+	apiGroup := r.Group("/")
 	auth.AuthRoutes(apiGroup)
+
+	protected := r.Group("/api/")
+	protected.Use(middlewares.AuthMiddleware())
+	{
+		users.GetUser(protected)
+		departments.DepartmentRoutes(protected)
+		locality.LocalityRoutes(protected)
+		typereport.TypeReportRouter(protected)
+		persons.PersonRouter((protected))
+		reports.ReportRouter(protected)
+		files.RegisterFileRoutes(protected)
+
+	}
 
 	if err := departments.CreateDepartments(); err != nil {
 		log.Println("error al crear los departamentos", err)
