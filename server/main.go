@@ -46,5 +46,8 @@ func main() {
 	if err := typereport.CreateTypeReportDefault(); err != nil {
 		log.Println("error al crear los tipos de reportes", err)
 	}
+	if err := users.CreateUserDefault(); err != nil {
+		log.Println("error al crear el usuario", err)
+	}
 	r.Run(":3000")
 }

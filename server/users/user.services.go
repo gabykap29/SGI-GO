@@ -1,7 +1,9 @@
 package users
 
 import (
+	"log"
 	"sgi-go/database"
+	"sgi-go/entities"
 	model_user "sgi-go/entities"
 	"sgi-go/utils"
 )
@@ -28,6 +30,36 @@ func CreateUser(user *model_user.User) (*model_user.User, error) {
 		return nil, result.Error
 	}
 	return user, nil
+}
+
+func CreateUserDefault() error {
+	var users int64
+
+	if err := database.DB.Model(entities.User{}).Count(&users).Error; err != nil {
+		return err
+	}
+
+	if users > 0 {
+		log.Println("Los usuarios ya se encuentran cargados!")
+		return nil
+	}
+	hashPass, err := utils.HashPass("admin1234")
+	if err != nil {
+		return err
+	}
+	user := entities.User{
+		Username: "admin",
+		Pass:     hashPass,
+		Name:     "admin",
+		LastName: "admin",
+		Role:     "admin",
+	}
+
+	result := database.DB.Create(&user)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }
 
 func EditUser(id string, user *model_user.User) error {
