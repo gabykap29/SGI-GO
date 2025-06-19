@@ -12,7 +12,9 @@ import (
 	"sgi-go/reports"
 	typereport "sgi-go/typeReport"
 	"sgi-go/users"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,7 +22,15 @@ func main() {
 	database.Connect()
 
 	r := gin.Default()
-
+	config := cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // O la URL de tu frontend
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	r.Use(cors.New(config))
 	apiGroup := r.Group("/")
 	auth.AuthRoutes(apiGroup)
 
@@ -49,5 +59,5 @@ func main() {
 	if err := users.CreateUserDefault(); err != nil {
 		log.Println("error al crear el usuario", err)
 	}
-	r.Run(":3000")
+	r.Run(":4000")
 }
