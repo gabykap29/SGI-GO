@@ -19,5 +19,6 @@ type Report struct {
 	Description  string     `json:"description"`
 	Persons      []Person   `json:"persons" gorm:"many2many:person_report;joinForeignKey:ReportID;joinReferences:PersonID"`
 	UserID       uint       `json:"user_id"`
+	Status       string     `json:"status" gorm:"not null" default:"pending"`
 	User         User       `json:"-" gorm:"foreignKey:UserID;references:ID" binding:"-"`
 }

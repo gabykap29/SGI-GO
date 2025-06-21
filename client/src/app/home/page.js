@@ -2,16 +2,15 @@
 import { useState, useEffect } from 'react';
 import { FileText, TrendingUp, AlertTriangle, CheckCircle, Clock, Users, Menu, X } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebard';
+import { getReports } from '../../../hooks/handleReports';
+
 export default function DashboardInicio() {
   const [informes, setInformes] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [stats, setStats] = useState({
-    tecnico: 12,
-    administrativo: 8,
-    urgente: 3,
-    completado: 15,
-    pendiente: 8,
-    enProceso: 5
+    Urgente: 0,
+    Completado: 0,
+    Pendiente: 0,
   });
 
   // Auto-colapsar en pantallas pequeñas
@@ -31,65 +30,23 @@ export default function DashboardInicio() {
   }, []);
 
   // Datos de ejemplo para los últimos informes
-  useEffect(() => {
-    const informesEjemplo = [
-      {
-        id: 1,
-        departamento: 'Formosa',
-        localidad: 'Formosa',
-        tipoInforme: 'Politica',
-        fecha: '2024-06-15',
-        titulo: 'Actualización de servidores principales',
-        estado: 'Completado'
-      },
-      {
-        id: 2,
-        departamento: 'Pilcomayo',
-        localidad: 'Clorinda',
-        tipoInforme: 'Institucional',
-        fecha: '2024-06-14',
-        titulo: 'Evaluación de desempeño Q2',
-        estado: 'En Proceso'
-      },
-      {
-        id: 3,
-        departamento: 'Formosa',
-        localidad: 'Formosa',
-        tipoInforme: 'Proselitismo',
-        fecha: '2024-06-14',
-        titulo: 'Incidente de seguridad - Sector A',
-        estado: 'Pendiente'
-      },
-      {
-        id: 4,
-        departamento: 'Pirane',
-        localidad: 'Pirane',
-        tipoInforme: 'Ambientales',
-        fecha: '2024-06-13',
-        titulo: 'Análisis presupuestario mensual',
-        estado: 'Completado'
-      },
-      {
-        id: 5,
-        departamento: 'Pirane',
-        localidad: 'Pirane',
-        tipoInforme: 'Salud',
-        fecha: '2024-06-13',
-        titulo: 'Mantenimiento preventivo equipos',
-        estado: 'En Proceso'
-      },
-      {
-        id: 6,
-        departamento: 'Ramon Lista',
-        localidad: 'Prueba',
-        tipoInforme: 'Sociales',
-        fecha: '2024-06-12',
-        titulo: 'Auditoría de procesos ISO',
-        estado: 'Pendiente'
-      }
-    ];
-    setInformes(informesEjemplo);
-  }, []);
+useEffect(() => {
+  const handleReports = async () => {
+    const response = await getReports();
+    setInformes(response.data);
+
+    const newStats = response.data.reduce((acc, informe) => {
+      const status = informe.status || "Pendiente";
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    setStats(newStats);
+  };
+
+  handleReports();
+}, []);
+
 
   const getBadgeClass = (tipo) => {
     switch (tipo) {
@@ -137,6 +94,8 @@ export default function DashboardInicio() {
         return 'bg-warning';
       case 'Pendiente':
         return 'bg-secondary';
+      case 'Urgente':
+        return 'bg-danger';
       default:
         return 'bg-light';
     }
@@ -246,7 +205,7 @@ export default function DashboardInicio() {
                         <AlertTriangle className="text-danger" size={32} />
                       </div>
                       <div className="flex-grow-1 ms-3 ">
-                        <div className="fw-bold fs-4 text-dark ">{stats.urgente}</div>
+                        <div className="fw-bold fs-4 text-dark ">{stats.Urgente || 0}</div>
                         <div className="text-muted small">Urgentes</div>
                       </div>
                     </div>
@@ -262,7 +221,7 @@ export default function DashboardInicio() {
                         <CheckCircle className="text-success" size={32} />
                       </div>
                       <div className="flex-grow-1 ms-3">
-                        <div className="fw-bold fs-4 text-dark">{stats.completado}</div>
+                        <div className="fw-bold fs-4 text-dark">{stats.Completado || 0}</div>
                         <div className="text-muted small">Completados</div>
                       </div>
                     </div>
@@ -278,7 +237,7 @@ export default function DashboardInicio() {
                         <Clock className="text-secondary" size={32} />
                       </div>
                       <div className="flex-grow-1 ms-3">
-                        <div className="fw-bold fs-4 text-dark">{stats.pendiente}</div>
+                        <div className="fw-bold fs-4 text-dark">{stats.Pendiente || 0}</div>
                         <div className="text-muted small">Pendientes</div>
                       </div>
                     </div>
@@ -314,28 +273,28 @@ export default function DashboardInicio() {
                         </tr>
                       </thead>
                       <tbody>
-                        {informes.map((informe) => (
+                        { informes.length > 0 ? informes.map((informe) => (
                           <tr key={informe.id} className="border-bottom">
                             <td className="py-3">
-                              <span className="fw-semibold text-dark">{informe.departamento}</span>
+                              <span className="fw-semibold text-dark">{informe.department.name}</span>
                             </td>
                             <td className="py-3 text-muted">
-                              {informe.localidad}
+                              {informe.locality.name}
                             </td>
                             <td className="py-3">
-                              <span className={`badge rounded-pill ${getBadgeClass(informe.tipoInforme)} text-white px-3`}>
-                                {informe.tipoInforme}
+                              <span className={`badge rounded-pill ${getBadgeClass(informe.type_report.name)} text-white px-3`}>
+                                {informe.type_report.name}
                               </span>
                             </td>
                             <td className="py-3 text-muted">
-                              {formatFecha(informe.fecha)}
+                              {formatFecha(informe.date)}
                             </td>
                             <td className="py-3 text-dark">
-                              {informe.titulo}
+                              {informe.title}
                             </td>
                             <td className="py-3">
-                              <span className={`badge rounded-pill ${getEstadoBadge(informe.estado)} text-white px-3`}>
-                                {informe.estado}
+                              <span className={`badge rounded-pill ${getEstadoBadge(informe.status)} text-white px-3`}>
+                                {informe.status || "Pendiente"}
                               </span>
                             </td>
                             <td className="py-3 text-center">
@@ -349,7 +308,13 @@ export default function DashboardInicio() {
                               </div>
                             </td>
                           </tr>
-                        ))}
+                        )) : (
+                          <tr>
+                            <td colSpan={7} className="text-center">
+                             Aun no hay informes cargados!
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>

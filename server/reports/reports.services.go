@@ -48,7 +48,7 @@ func GetReports(query *query, page int64, limit int64) ([]entities.Report, int64
 
 	filters.Count(&total)
 
-	err := filters.Offset(int(offset)).Limit(int(limit)).Preload("Department").Preload("Locality").Find(&reports).Error
+	err := filters.Offset(int(offset)).Limit(int(limit)).Preload("Department").Preload("Locality").Preload("TypeReport").Find(&reports).Error
 	if err != nil {
 		return nil, 0, err
 	}
