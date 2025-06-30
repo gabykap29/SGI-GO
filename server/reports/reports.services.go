@@ -2,6 +2,7 @@ package reports
 
 import (
 	"errors"
+	utils_auth "sgi-go/auth/utils"
 	"sgi-go/database"
 	"sgi-go/entities"
 
@@ -67,10 +68,16 @@ func GetReportById(id int64) (*entities.Report, error) {
 	return &report, nil
 }
 
-func AddReport(report *entities.Report) (*entities.Report, error) {
+func AddReport(report *entities.Report, token string) (*entities.Report, error) {
 	if report.Title == "" || report.DepartmentID == 0 || report.LocalityID == 0 || report.TypeReportID == 0 || report.Content == "" {
 		return nil, errors.New("El título, departamento, localidad, fecha, tipo de reporte y contenido son obligatorios")
 	}
+
+	userID, err := utils_auth.ValidateToken(token)
+	if err != nil {
+		return nil, errors.New("Token invalido: " + err.Error())
+	}
+	report.UserID = userID
 	result := database.DB.Create(&report)
 
 	if result.Error != nil {

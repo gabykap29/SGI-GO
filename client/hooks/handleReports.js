@@ -15,3 +15,30 @@ export async function getReports(){
     }
     return data;
 } 
+
+export async function CreateReport(reportData){
+    const token = localStorage.getItem("token")
+    const res = await fetch(apiUrl + "/api/reports", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+            department_id: parseInt(reportData.department_id),
+            locality_id: parseInt(reportData.locality_id),
+            date: reportData.date,
+            type_report_id: parseInt(reportData.type_report_id),
+            status: reportData.status,
+            title: reportData.title,
+            content: reportData.content,
+            description: reportData.description || "Sin descripción" 
+        })
+    })
+    const data = await res.json();
+    if(!res.ok){
+        return null
+    }
+    return data;
+    
+}

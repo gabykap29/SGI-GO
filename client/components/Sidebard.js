@@ -31,13 +31,13 @@ import {
   
         <ul className="nav flex-column p-2">
           <li className="nav-item mb-2">
-            <a href="#" className="nav-link text-white d-flex align-items-center" title="Dashboard">
+            <a href="/home" className="nav-link text-white d-flex align-items-center" title="Dashboard">
               <TrendingUp className="text-info flex-shrink-0" size={20} />
               {!isCollapsed && <span className="ms-2">Dashboard</span>}
             </a>
           </li>
           <li className="nav-item mb-2">
-            <a href="#" className="nav-link text-white d-flex align-items-center" title="Informes">
+            <a href="/reports/create" className="nav-link text-white d-flex align-items-center" title="Informes">
               <FileText className="text-primary flex-shrink-0" size={20} />
               {!isCollapsed && <span className="ms-2">Informes</span>}
             </a>

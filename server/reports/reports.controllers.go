@@ -2,12 +2,24 @@ package reports
 
 import (
 	"log"
-	"strconv"
-
 	"sgi-go/entities"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+type ReportInput struct {
+	Title        string `json:"title" binding:"required"`
+	Description  string `json:"description" binding:"required"`
+	Content      string `json:"content"`
+	Status       string `json:"status"`
+	Date         string `json:"date" binding:"required"`
+	DepartmentID uint   `json:"department_id" binding:"required"`
+	LocalityID   uint   `json:"locality_id" binding:"required"`
+	TypeReportID uint   `json:"type_report_id" binding:"required"`
+}
 
 func ReportRouter(r *gin.RouterGroup) {
 	r.GET("/reports", func(c *gin.Context) {
@@ -44,8 +56,8 @@ func ReportRouter(r *gin.RouterGroup) {
 	})
 
 	r.POST("/reports", func(c *gin.Context) {
-		var report entities.Report
-		if err := c.ShouldBindJSON(&report); err != nil {
+		var input ReportInput
+		if err := c.ShouldBindJSON(&input); err != nil {
 			log.Println(err.Error())
 			c.JSON(400, gin.H{
 				"error":   "Error al crear el informe, verifique los campos e intente nuevamente!",
@@ -53,7 +65,40 @@ func ReportRouter(r *gin.RouterGroup) {
 			})
 			return
 		}
-		result, err := AddReport(&report)
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(401, gin.H{"error": "Token de autorización no proporcionado"})
+			return
+		}
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		if token == "" {
+			c.JSON(401, gin.H{"error": "Token de autorización no proporcionado"})
+			return
+		}
+
+		parsedDate, err := time.Parse("2006-01-02T15:04", input.Date)
+		if err != nil {
+			log.Println(err.Error())
+			c.JSON(400, gin.H{
+				"error":   "Formato de fecha inválido. Debe ser YYYY-MM-DDTHH:MM",
+				"details": err.Error(),
+			})
+			return
+		}
+
+		// Mapear al modelo real
+		report := entities.Report{
+			Title:        input.Title,
+			Description:  input.Description,
+			Content:      input.Content,
+			Status:       input.Status,
+			Date:         parsedDate,
+			DepartmentID: input.DepartmentID,
+			LocalityID:   input.LocalityID,
+			TypeReportID: input.TypeReportID,
+		}
+
+		result, err := AddReport(&report, token)
 		if err != nil {
 			log.Println(err.Error())
 			c.JSON(400, gin.H{
@@ -62,6 +107,7 @@ func ReportRouter(r *gin.RouterGroup) {
 			})
 			return
 		}
+
 		c.JSON(201, result)
 	})
 
