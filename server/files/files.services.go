@@ -42,6 +42,7 @@ func SaveReportFile(fileHeader *multipart.FileHeader, reportID uint) (*entities.
 	file := &entities.File{
 		Name:     fileHeader.Filename,
 		Path:     filePath,
+		Filename: filename,
 		ReportID: reportID,
 		Type:     fileHeader.Header.Get("Content-Type"),
 	}

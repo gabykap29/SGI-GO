@@ -1,10 +1,12 @@
 "use client"
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FileText, TrendingUp, AlertTriangle, CheckCircle, Clock, Users, Menu, X } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebard';
 import { getReports } from '../../../hooks/handleReports';
 
 export default function DashboardInicio() {
+  const router = useRouter();
   const [informes, setInformes] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [stats, setStats] = useState({
@@ -299,10 +301,16 @@ useEffect(() => {
                             </td>
                             <td className="py-3 text-center">
                               <div className="d-flex justify-content-center gap-2">
-                                <button className="btn btn-sm btn-outline-primary d-flex align-items-center">
+                                <button 
+                                  className="btn btn-sm btn-outline-primary d-flex align-items-center"
+                                  onClick={() => router.push(`/reports/view/${informe.id}`)}
+                                >
                                   <i className="bi bi-eye me-1"></i> Ver
                                 </button>
-                                <button className="btn btn-sm btn-outline-secondary d-flex align-items-center">
+                                <button 
+                                  className="btn btn-sm btn-outline-secondary d-flex align-items-center"
+                                  onClick={() => router.push(`/reports/edit/${informe.id}`)}
+                                >
                                   <i className="bi bi-pencil me-1"></i> Editar
                                 </button>
                               </div>

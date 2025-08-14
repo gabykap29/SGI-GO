@@ -7,6 +7,7 @@ import { getLocalities } from '../../../../hooks/handleLocalities';
 import { getTypeReports } from '../../../../hooks/handleTypeReports';
 import { CreateReport } from '../../../../hooks/handleReports';
 
+
 export default function CrearInforme() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [departments, setDepartments] = useState([]);
@@ -22,6 +23,7 @@ export default function CrearInforme() {
     content: '',
     description: ''
   });
+
 
   useEffect(() => {
     async function fetchDepartments() {
@@ -100,9 +102,14 @@ useEffect(() => {
       
     return;
     }
+    
+
+    
     console.log('Informe creado:', result);
     alert('Informe creado exitosamente');
   };
+
+
 
   return (
     <>
@@ -358,6 +365,8 @@ useEffect(() => {
                           </div>
                         </div>
 
+
+
                         {/* Botones de acción */}
                         <div className="col-12">
                           <div className="d-flex justify-content-end gap-3 pt-3 border-top">
@@ -365,7 +374,11 @@ useEffect(() => {
                               <ArrowLeft size={18} className="me-1" />
                               Cancelar
                             </button>
-                            <button type="submit" className="btn btn-dark" onClick={handleSubmit}>
+                            <button 
+                              type="submit" 
+                              className="btn btn-dark" 
+                              onClick={handleSubmit}
+                            >
                               <Save size={18} className="me-1" />
                               Crear Informe
                             </button>

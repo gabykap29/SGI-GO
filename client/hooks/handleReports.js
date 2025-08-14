@@ -16,6 +16,22 @@ export async function getReports(){
     return data;
 } 
 
+export async function getReportById(id){
+    const token = localStorage.getItem("token")
+    const res = await fetch(apiUrl + `/api/reports/${id}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        }
+    })
+    const data = await res.json();
+    if(!res.ok){
+        return null
+    }
+    return data;
+}
+
 export async function CreateReport(reportData){
     const token = localStorage.getItem("token")
     const res = await fetch(apiUrl + "/api/reports", {
