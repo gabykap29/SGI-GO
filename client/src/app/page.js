@@ -54,7 +54,7 @@ export default function Login() {
                 <div className="card-body p-4 p-sm-5">
                   {/* Header */}
                   <div className="text-center mb-4">
-                    <h4 className="card-title fw-bold text-dark mb-3">SISTEMA DE GESTIÓN DE INFORMES</h4>
+                    <h4 className="card-title fw-bold mb-3">SISTEMA DE GESTIÓN DE INFORMES</h4>
                     <div className="mb-3">
                       <Image
                         src="/icon.png"
@@ -71,7 +71,7 @@ export default function Login() {
                   <form onSubmit={handleSubmit}>
                     {/* Email Field */}
                     <div className="mb-3">
-                      <label htmlFor="username" className="form-label text-dark fw-medium">
+                      <label htmlFor="username" className="form-label fw-medium">
                         Usuario
                       </label>
                       <input
@@ -88,7 +88,7 @@ export default function Login() {
 
                     {/* Password Field */}
                     <div className="mb-3">
-                      <label htmlFor="password" className="form-label text-dark fw-medium">
+                      <label htmlFor="password" className="form-label fw-medium">
                         Contraseña
                       </label>
                       <div className="input-group">
@@ -157,7 +157,7 @@ export default function Login() {
                     <div className="text-center">
                       <p className="text-muted mb-0 small">
                         ¿Problemas para acceder?{' '}
-                        <a href="#" className="text-dark text-decoration-none fw-medium">
+                        <a href="#" className="text-decoration-none fw-medium">
                           Contacta al administrador
                         </a>
                       </p>

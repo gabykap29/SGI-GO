@@ -6,10 +6,15 @@ import { getDepartments } from '../../../../hooks/handleDepartments';
 import { getLocalities } from '../../../../hooks/handleLocalities';
 import { getTypeReports } from '../../../../hooks/handleTypeReports';
 import { CreateReport } from '../../../../hooks/handleReports';
+import { handleError, handleSuccess } from '../../../../hooks/toaster';
+import { Toaster } from 'sonner';
+import useTheme from '../../../../hooks/useTheme';
+import { Sun, Moon } from 'lucide-react';
 
 
 export default function CrearInforme() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const { theme, toggleTheme, isDark } = useTheme();
   const [departments, setDepartments] = useState([]);
   const [localities, setLocalities] = useState([]);
   const [typeReports, setTypeReports] = useState([]);
@@ -97,7 +102,7 @@ useEffect(() => {
     console.log('Datos del formulario:', formData);
     const result = await CreateReport(formData);
     if (!result) {
-      alert('Error al crear el informe. Por favor, intente nuevamente.');
+      handleError('Error al crear el informe. Por favor, intente nuevamente.');
       console.log(result);
       
     return;
@@ -106,7 +111,10 @@ useEffect(() => {
 
     
     console.log('Informe creado:', result);
-    alert('Informe creado exitosamente');
+    handleSuccess('Informe creado exitosamente');
+    setTimeout(()=> {
+      window.location.href = '/reports/view/' + result.id;
+    }, 2000)
   };
 
 
@@ -122,6 +130,40 @@ useEffect(() => {
         rel="stylesheet" 
       />
       
+      <style>
+        {`
+          /* Estilos para modo oscuro */
+          ${isDark ? `
+            .text-primary {
+              color: #ffffff !important;
+            }
+            .text-muted {
+              color: #d4d4d4 !important;
+            }
+            .text-secondary {
+              color: #d4d4d4 !important;
+            }
+            .breadcrumb-item a {
+              color: #d4d4d4 !important;
+            }
+            .breadcrumb-item.active {
+              color: #ffffff !important;
+            }
+            .form-label {
+              color: #ffffff !important;
+            }
+            .alert {
+              color: #ffffff !important;
+            }
+            .alert-info {
+              background-color: rgba(59, 130, 246, 0.1) !important;
+              border-color: var(--primary-color) !important;
+              color: #ffffff !important;
+            }
+          ` : ''}
+        `}
+      </style>
+      
       <div className="d-flex">
         <Sidebar 
           isCollapsed={sidebarCollapsed} 
@@ -129,23 +171,30 @@ useEffect(() => {
         />
         <div className={`flex-grow-1 `}>
           {/* Header */}
-          <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+          <nav className="navbar navbar-expand-lg">
             <div className="container-fluid">
               <div className="d-flex align-items-center">
                 <button 
-                  className="btn btn-dark me-2"
+                  className="btn btn-secondary me-2"
                   onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                   aria-label="Contraer/Expandir sidebar"
                 >
                   <Menu size={20} />
                 </button>
-                <a className="navbar-brand fw-bold" href="#">
+                <a className="navbar-brand fw-bold" href="#" style={{color: isDark ? '#ffffff' : 'inherit'}}>
                   <FileText className="me-2" size={24} />
                   SGI - Sistema de Gestión de Informes
                 </a>
               </div>
               <div className="navbar-nav ms-auto">
-                <a className="nav-link" href="#">
+                <button 
+                  className="theme-toggle me-3"
+                  onClick={toggleTheme}
+                  title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                >
+                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+                <a className="nav-link" href="#" style={{color: isDark ? '#ffffff' : 'inherit'}}>
                   <Users size={18} className="me-1" />
                   Usuario Admin
                 </a>
@@ -153,31 +202,39 @@ useEffect(() => {
             </div>
           </nav>
           
-          <div className="container-fluid py-4 bg-light min-vh-100">
+          <div className="container-fluid py-4 min-vh-100">
             {/* Título de la página */}
             <div className="row mb-4">
               <div className="col-12">
-                <div className="p-4 rounded shadow-sm bg-white border-start border-4 border-dark">
+                <div className={isDark ? "p-4 rounded shadow-sm border-start border-4 border-dark bg-dark": "p-4 rounded shadow-sm border-start border-4 border-secondary"}>
                   <div className="d-flex align-items-center justify-content-between mb-2">
                     <div className="d-flex align-items-center">
-                      <FileText size={28} className="me-2 text-dark" />
-                      <h1 className="h3 mb-0 text-dark">Crear Nuevo Informe</h1>
+                      <FileText size={28} className="me-2" style={{color: isDark ? '#ffffff' : '#0d6efd'}} />
+                      <h1 className="h3 mb-0" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
+                        Crear Nuevo Informe
+                      </h1>
                     </div>
-                    <button className="btn btn-outline-secondary d-flex align-items-center">
+                    <button className={`btn ${isDark ? 'btn-outline-light' : 'btn-outline-secondary'} d-flex align-items-center`}>
                       <ArrowLeft size={18} className="me-1" />
                       Volver
                     </button>
                   </div>
-                  <p className="text-muted mb-1">Complete todos los campos para crear un nuevo informe.</p>
+                  <p className="mb-1" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                    Complete todos los campos para crear un nuevo informe.
+                  </p>
                   <nav aria-label="breadcrumb">
                     <ol className="breadcrumb mb-0">
                       <li className="breadcrumb-item">
-                        <a href="#" className="text-decoration-none">Inicio</a>
+                        <a href="#" className="text-decoration-none" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                          Inicio
+                        </a>
                       </li>
                       <li className="breadcrumb-item">
-                        <a href="#" className="text-decoration-none">Informes</a>
+                        <a href="#" className="text-decoration-none" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                          Informes
+                        </a>
                       </li>
-                      <li className="breadcrumb-item active" aria-current="page">
+                      <li className="breadcrumb-item active" aria-current="page" style={{color: isDark ? '#ffffff' : 'inherit'}}>
                         Crear Informe
                       </li>
                     </ol>
@@ -190,9 +247,11 @@ useEffect(() => {
             <div className="row">
               <div className="col-12">
                 <div className="card border-0 shadow-sm">
-                  <div className="card-header bg-white border-bottom">
-                    <h5 className="mb-0 fw-bold text-dark d-flex align-items-center">
-                      <AlertCircle size={20} className="me-2 text-primary" />
+                  <div className="card-header ">
+                    <h5 className={isDark ? "mb-0 fw-bold d-flex align-items-center " : "mb-0 fw-bold d-flex align-items-center"} >
+
+                      <AlertCircle size={20} className={isDark ? "me-2 text-primary" : "me-2"} />
+
                       Información del Informe
                     </h5>
                   </div>
@@ -215,7 +274,7 @@ useEffect(() => {
                                 <option key={dept.id} value={dept.id}>{dept.name}</option>
                               ))}
                             </select>
-                            <label htmlFor="department_id">
+                            <label htmlFor="department_id" style={{color: isDark ? '' : 'inherit'}}>
                               <MapPin size={16} className="me-1" />
                               Departamento *
                             </label>
@@ -238,7 +297,7 @@ useEffect(() => {
                                 <option key={locality.id} value={locality.id}>{locality.name}</option>
                               ))}
                             </select>
-                            <label htmlFor="locality_id">
+                            <label htmlFor="locality_id" style={{color: isDark ? '' : 'inherit'}}>
                               <MapPin size={16} className="me-1" />
                               Localidad *
                             </label>
@@ -257,7 +316,7 @@ useEffect(() => {
                               onChange={handleInputChange}
                               required 
                             />
-                            <label htmlFor="date">
+                            <label htmlFor="date" style={{color: isDark ? '' : 'inherit'}}>
                               <Calendar size={16} className="me-1" />
                               Fecha *
                             </label>
@@ -279,7 +338,7 @@ useEffect(() => {
                                 <option key={type.id} value={type.id}>{type.name}</option>
                               ))}
                             </select>
-                            <label htmlFor="type_report_id">
+                            <label htmlFor="type_report_id" style={{color: isDark ? '' : 'inherit'}}>
                               <FileType size={16} className="me-1" />
                               Tipo de Informe *
                             </label>
@@ -299,13 +358,14 @@ useEffect(() => {
                               placeholder="Ingrese el título del informe"
                               required 
                             />
-                            <label htmlFor="title">
+                            <label htmlFor="title" style={{color: isDark ? '' : 'inherit'}}>
                               <FileText size={16} className="me-1" />
                               Título del Informe *
                             </label>
                           </div>
                         </div>
-                                                <div className="col-md-6">
+                        
+                        <div className="col-md-6">
                           <div className="form-floating">
                             <select
                               className="form-select"
@@ -320,12 +380,13 @@ useEffect(() => {
                               <option value="Urgente">Urgente</option>
                               <option value="Completado">Completado</option>
                             </select>
-                            <label htmlFor="status">
+                            <label htmlFor="status" style={{color: isDark ? '' : 'inherit'}}>
                               <FileType size={16} className="me-1" />
                               Estado *
                             </label>
                           </div>
                         </div>
+                        
                         {/* Cuarta fila - Contenido */}
                         <div className="col-12">
                           <div className="form-floating">
@@ -339,7 +400,7 @@ useEffect(() => {
                               style={{ height: '150px' }}
                               required
                             ></textarea>
-                            <label htmlFor="content">
+                            <label htmlFor="content" style={{color: isDark ? '' : 'inherit'}}>
                               <FileText size={16} className="me-1" />
                               Contenido del Informe *
                             </label>
@@ -358,25 +419,26 @@ useEffect(() => {
                               placeholder="Ingrese una descripción adicional (opcional)"
                               style={{ height: '100px' }}
                             ></textarea>
-                            <label htmlFor="description">
+                            <label htmlFor="description" style={{color: isDark ? '#ffffff' : 'inherit'}}>
                               <FileText size={16} className="me-1" />
                               Descripción Adicional
                             </label>
                           </div>
                         </div>
 
-
-
                         {/* Botones de acción */}
                         <div className="col-12">
                           <div className="d-flex justify-content-end gap-3 pt-3 border-top">
-                            <button type="button" className="btn btn-outline-secondary">
+                            <button 
+                              type="button" 
+                              className={`btn ${isDark ? 'btn-outline-light' : 'btn-outline-secondary'}`}
+                            >
                               <ArrowLeft size={18} className="me-1" />
                               Cancelar
                             </button>
                             <button 
                               type="submit" 
-                              className="btn btn-dark" 
+                              className={`btn ${isDark ? 'btn-light' : 'btn-dark'}`}
                               onClick={handleSubmit}
                             >
                               <Save size={18} className="me-1" />
@@ -394,10 +456,10 @@ useEffect(() => {
             {/* Nota informativa */}
             <div className="row mt-4">
               <div className="col-12">
-                <div className="alert alert-info border-0 shadow-sm">
+                <div className={`alert ${isDark ? 'alert-primary' : 'alert-info'} border-0 shadow-sm`}>
                   <div className="d-flex align-items-center">
-                    <AlertCircle size={20} className="me-2" />
-                    <div>
+                    <AlertCircle size={20} className="me-2" style={{color: isDark ? '#ffffff' : 'inherit'}} />
+                    <div style={{color: isDark ? '#ffffff' : 'inherit'}}>
                       <strong>Información:</strong> Los campos marcados con (*) son obligatorios. 
                       Asegúrese de completar toda la información requerida antes de guardar el informe.
                     </div>
@@ -408,6 +470,12 @@ useEffect(() => {
           </div>
         </div>
       </div>
+      <Toaster 
+        position="top-right"
+        richColors
+        closeButton
+        duration={4000}
+      />  
     </>
   );
 }

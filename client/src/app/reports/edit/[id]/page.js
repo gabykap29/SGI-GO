@@ -7,6 +7,10 @@ import { getLocalities } from '../../../../../hooks/handleLocalities';
 import { getTypeReports } from '../../../../../hooks/handleTypeReports';
 //import { UpdateReport, getReportById } from '../../../../hooks/handleReports';
 import { useRouter } from 'next/navigation';
+import { handleError, handleSuccess } from '../../../../../hooks/toaster';
+import { Toaster } from 'sonner';
+import useTheme from '../../../../../hooks/useTheme';
+import { Sun, Moon } from 'lucide-react';
 
 export default function EditarInforme({ params }) {
   const router = useRouter();
@@ -17,6 +21,7 @@ export default function EditarInforme({ params }) {
   const [localities, setLocalities] = useState([]);
   const [typeReports, setTypeReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { theme, toggleTheme, isDark } = useTheme();
   const [formData, setFormData] = useState({
     id: 0,
     department_id: 0,
@@ -69,7 +74,7 @@ export default function EditarInforme({ params }) {
         console.log('Datos cargados exitosamente');
       } catch (error) {
         console.error('Error al cargar datos:', error);
-        alert('Error al cargar los datos del informe');
+        handleError('Error al cargar los datos del informe');
       } finally {
         setLoading(false);
       }
@@ -138,18 +143,18 @@ export default function EditarInforme({ params }) {
       const result = await UpdateReport(formData.id, formData);
       
       if (!result) {
-        alert('Error al actualizar el informe. Por favor, intente nuevamente.');
+        handleError('Error al actualizar el informe. Por favor, intente nuevamente.');
         return;
       }
       
       console.log('Informe actualizado:', result);
-      alert('Informe actualizado exitosamente');
+      handleSuccess('Informe actualizado exitosamente');
       
       // Opcional: redirigir a la lista de informes o a la vista del informe
       // router.push('/informes');
     } catch (error) {
       console.error('Error al actualizar:', error);
-      alert('Error al actualizar el informe');
+      handleError('Error al actualizar el informe');
     }
   };
 
@@ -187,11 +192,11 @@ export default function EditarInforme({ params }) {
         />
         <div className={`flex-grow-1 `}>
           {/* Header */}
-          <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+          <nav className="navbar navbar-expand-lg">
             <div className="container-fluid">
               <div className="d-flex align-items-center">
                 <button 
-                  className="btn btn-dark me-2"
+                  className="btn btn-secondary me-2"
                   onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                   aria-label="Contraer/Expandir sidebar"
                 >
@@ -203,6 +208,13 @@ export default function EditarInforme({ params }) {
                 </a>
               </div>
               <div className="navbar-nav ms-auto">
+                <button 
+                  className="theme-toggle me-3"
+                  onClick={toggleTheme}
+                  title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                >
+                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
                 <a className="nav-link" href="#">
                   <Users size={18} className="me-1" />
                   Usuario Admin
@@ -211,15 +223,15 @@ export default function EditarInforme({ params }) {
             </div>
           </nav>
           
-          <div className="container-fluid py-4 bg-light min-vh-100">
+          <div className="container-fluid py-4 min-vh-100">
             {/* Título de la página */}
             <div className="row mb-4">
               <div className="col-12">
-                <div className="p-4 rounded shadow-sm bg-white border-start border-4 border-warning">
+                <div className="p-4 rounded shadow-sm bg-secondary border-start border-4 border-warning">
                   <div className="d-flex align-items-center justify-content-between mb-2">
                     <div className="d-flex align-items-center">
                       <Edit size={28} className="me-2 text-warning" />
-                      <h1 className="h3 mb-0 text-dark">Editar Informe</h1>
+                      <h1 className="h3 mb-0 text-primary">Editar Informe</h1>
                     </div>
                     <button 
                       className="btn btn-outline-secondary d-flex align-items-center"
@@ -251,8 +263,8 @@ export default function EditarInforme({ params }) {
             <div className="row">
               <div className="col-12">
                 <div className="card border-0 shadow-sm">
-                  <div className="card-header bg-white border-bottom">
-                    <h5 className="mb-0 fw-bold text-dark d-flex align-items-center">
+                  <div className="card-header bg-secondary border-bottom">
+                    <h5 className="mb-0 fw-bold text-primary d-flex align-items-center">
                       <Edit size={20} className="me-2 text-warning" />
                       Modificar Información del Informe
                     </h5>
@@ -488,6 +500,12 @@ export default function EditarInforme({ params }) {
           </div>
         </div>
       </div>
+      <Toaster 
+        position="top-right"
+        richColors
+        closeButton
+        duration={4000}
+      />  
     </>
   );
 }

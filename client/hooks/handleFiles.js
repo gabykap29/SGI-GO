@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 // Función para subir archivos a un reporte específico
@@ -25,7 +27,10 @@ export const uploadFile = async (file, reportId) => {
     }
 
     const data = await response.json();
-    return data;
+    setTimeout(() => {
+      alert('Archivo subido con éxito');
+      window.location.reload();
+    }, 2000);
   } catch (error) {
     console.error('Error uploading file:', error);
     throw error;
@@ -60,6 +65,36 @@ export const getAuthenticatedFileUrl = async (filename) => {
   } catch (error) {
     console.error('Error getting authenticated file:', error);
     return null;
+  }
+};
+
+// Función para eliminar un archivo
+export const deleteFile = async (fileId) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No se encontró el token de autenticación');
+    }
+
+    const response = await fetch(`${API_URL}/api/files/${fileId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al eliminar el archivo');
+    }
+
+    const data = await response.json();
+    alert('Archivo eliminado con éxito');
+    return data;
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    throw error;
   }
 };
 

@@ -1,14 +1,16 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, TrendingUp, AlertTriangle, CheckCircle, Clock, Users, Menu, X } from 'lucide-react';
+import { FileText, TrendingUp, AlertTriangle, CheckCircle, Clock, Users, Menu, X, Sun, Moon } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebard';
 import { getReports } from '../../../hooks/handleReports';
+import useTheme from '../../../hooks/useTheme';
 
 export default function DashboardInicio() {
   const router = useRouter();
   const [informes, setInformes] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const { theme, toggleTheme, isDark } = useTheme();
   const [stats, setStats] = useState({
     Urgente: 0,
     Completado: 0,
@@ -22,7 +24,6 @@ export default function DashboardInicio() {
         setSidebarCollapsed(true);
       }
     };
-
     // Solo ejecutar en el cliente
     if (typeof window !== 'undefined') {
       handleResize();
@@ -36,19 +37,15 @@ useEffect(() => {
   const handleReports = async () => {
     const response = await getReports();
     setInformes(response.data);
-
     const newStats = response.data.reduce((acc, informe) => {
       const status = informe.status || "Pendiente";
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {});
-
     setStats(newStats);
   };
-
   handleReports();
 }, []);
-
 
   const getBadgeClass = (tipo) => {
     switch (tipo) {
@@ -61,21 +58,21 @@ useEffect(() => {
       case 'Religioso':
         return 'bg-warning';
       case 'Proselitismo':
-        return 'bg-danger text-white'; // más suave pero visible
+        return 'bg-danger text-white';
       case 'Salud':
         return 'bg-success';
       case 'Seguridad':
         return 'bg-dark text-white';
       case 'Eventos Climaticos':
-        return 'bg-warning text-dark';
+        return 'bg-warning';
       case 'Hídricos':
-        return 'bg-primary-subtle text-dark';
+        return 'bg-primary-subtle';
       case 'Económicos':
         return 'bg-secondary';
       case 'Ambientales':
-        return 'bg-success text-dark';
+        return 'bg-success';
       case 'Sociales':
-        return 'bg-info text-dark';
+        return 'bg-info';
       case 'Turismo':
         return 'bg-pink text-white';
       case 'Deportivos':
@@ -83,11 +80,10 @@ useEffect(() => {
       case 'OTROS':
         return 'bg-secondary';
       default:
-        return 'bg-light text-dark';
+        return 'bg-light';
     }
   };
   
-
   const getEstadoBadge = (estado) => {
     switch (estado) {
       case 'Completado':
@@ -136,9 +132,49 @@ useEffect(() => {
           }
           
           .sidebar-collapsed .nav-link:hover {
-            background-color: #f8f9fa;
+            background-color: ${isDark ? 'var(--bg-tertiary)' : '#f8f9fa'};
             border-radius: 4px;
           }
+
+          /* Sobrescribir colores de texto en modo oscuro */
+          ${isDark ? `
+            .text-primary {
+              color: #ffffff !important;
+            }
+            .text-muted {
+              color: #ffffff !important;
+            }
+            .text-secondary {
+              color: #d4d4d4 !important;
+            }
+            .fw-bold.fs-4.text-primary {
+              color: #ffffff !important;
+            }
+            .text-muted.small {
+              color: #d4d4d4 !important;
+            }
+            .breadcrumb-item a {
+              color: #d4d4d4 !important;
+            }
+            .breadcrumb-item.active {
+              color: #ffffff !important;
+            }
+            .table th {
+              color: #ffffff !important;
+            }
+            .table td {
+              color: #ffffff !important;
+            }
+            .py-3.text-muted {
+              color: #d4d4d4 !important;
+            }
+            .py-3.text-primary {
+              color: #ffffff !important;
+            }
+            .fw-semibold.text-primary {
+              color: #ffffff !important;
+            }
+          ` : ''}
         `}
       </style>
       <div className="d-flex">
@@ -146,25 +182,32 @@ useEffect(() => {
           isCollapsed={sidebarCollapsed} 
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
         />
-        <div className="flex-grow-1 bg-light min-vh-100">
+        <div className="flex-grow-1 min-vh-100">
           {/* Header */}
-          <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+          <nav className="navbar navbar-expand-lg">
             <div className="container-fluid">
               <div className="d-flex align-items-center">
                 <button 
-                  className="btn btn-dark me-2"
+                  className="btn btn-secondary me-2"
                   onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                   aria-label="Contraer/Expandir sidebar"
                 >
                   <Menu size={20} />
                 </button>
-                <a className="navbar-brand fw-bold" href="#">
+                <a className="navbar-brand fw-bold" href="#" style={{color: isDark ? '#ffffff' : 'inherit'}}>
                   <FileText className="me-2" size={24} />
                   SGI - Sistema de Gestión de Informes
                 </a>
               </div>
               <div className="navbar-nav ms-auto">
-                <a className="nav-link" href="#">
+                <button 
+                  className="theme-toggle me-3"
+                  onClick={toggleTheme}
+                  title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                >
+                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+                <a className="nav-link" href="#" style={{color: isDark ? '#ffffff' : 'inherit'}}>
                   <Users size={18} className="me-1" />
                   Usuario Admin
                 </a>
@@ -175,46 +218,52 @@ useEffect(() => {
           <div className="container-fluid py-4">
             {/* Título de bienvenida */}
             <div className="row mb-4">
-          <div className="col-12">
-            <div className="p-4 rounded shadow-sm bg-white border-start border-4 border-dark">
-              <div className="d-flex align-items-center mb-2">
-                <FileText size={28} className="me-2 text-dark" />
-                <h1 className="h3 mb-0 text-dark">Dashboard</h1>
+              <div className="col-12">
+                <div className={isDark? "p-4 rounded shadow-sm border-start border-4 border-dark bg-dark": "p-4 rounded shadow-sm border-start border-4 border-dark"}>
+                  <div className="d-flex align-items-center mb-2">
+                    <FileText size={28} className="me-2" style={{color: isDark ? '#ffffff' : 'inherit'}} />
+                    <h1 className="h3 mb-0" style={{color: isDark ? '#ffffff' : 'inherit'}}>Dashboard</h1>
+                  </div>
+                  <p className="small" style={{color: isDark ? '#ffffff' : '#6c757d'}}>
+                    Bienvenido al sistema de Gestión de Informes
+                  </p>
+                  <nav aria-label="breadcrumb">
+                    <ol className="breadcrumb mb-0">
+                      <li className="breadcrumb-item">
+                        <a href="#" className="text-decoration-none" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                          Inicio
+                        </a>
+                      </li>
+                      <li className="breadcrumb-item active" aria-current="page" style={{color: isDark ? '#ffffff' : 'inherit'}}>
+                        Dashboard
+                      </li>
+                    </ol>
+                  </nav>
+                </div>
               </div>
-              <p className="text-muted mb-1">Bienvenido al sistema de gestión de informes.</p>
-              <nav aria-label="breadcrumb">
-                <ol className="breadcrumb mb-0">
-                  <li className="breadcrumb-item">
-                    <a href="#" className="text-decoration-none">Inicio</a>
-                  </li>
-                  <li className="breadcrumb-item active" aria-current="page">
-                    Dashboard
-                  </li>
-                </ol>
-              </nav>
             </div>
-          </div>
-        </div>
-
 
             {/* Cards de estadísticas */}
-            <div className="row mb-4 ">
+            <div className="row mb-4">
               <div className="col-xl-4 col-md-4 col-sm-6 mb-3">
                 <div className="card border-0 shadow-sm border-start border-4 border-danger">
                   <div className="card-body">
-                    <div className="d-flex align-items-center ">
+                    <div className="d-flex align-items-center">
                       <div className="flex-shrink-0">
                         <AlertTriangle className="text-danger" size={32} />
                       </div>
-                      <div className="flex-grow-1 ms-3 ">
-                        <div className="fw-bold fs-4 text-dark ">{stats.Urgente || 0}</div>
-                        <div className="text-muted small">Urgentes</div>
+                      <div className="flex-grow-1 ms-3">
+                        <div className="fw-bold fs-4" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
+                          {stats.Urgente || 0}
+                        </div>
+                        <div className="small" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                          Urgentes
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
               <div className="col-xl-4 col-md-4 col-sm-6 mb-3">
                 <div className="card border-0 shadow-sm border-start border-4 border-success">
                   <div className="card-body">
@@ -223,24 +272,31 @@ useEffect(() => {
                         <CheckCircle className="text-success" size={32} />
                       </div>
                       <div className="flex-grow-1 ms-3">
-                        <div className="fw-bold fs-4 text-dark">{stats.Completado || 0}</div>
-                        <div className="text-muted small">Completados</div>
+                        <div className="fw-bold fs-4" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
+                          {stats.Completado || 0}
+                        </div>
+                        <div className="small" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                          Completados
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
               <div className="col-xl-4 col-md-4 col-sm-6 mb-3">
                 <div className="card border-0 shadow-sm border-start border-4 border-secondary">
                   <div className="card-body">
                     <div className="d-flex align-items-center">
                       <div className="flex-shrink-0">
-                        <Clock className="text-secondary" size={32} />
+                        <Clock className="" size={32} style={{color: isDark ? '#ffffff' : 'inherit'}} />
                       </div>
                       <div className="flex-grow-1 ms-3">
-                        <div className="fw-bold fs-4 text-dark">{stats.Pendiente || 0}</div>
-                        <div className="text-muted small">Pendientes</div>
+                        <div className="fw-bold fs-4" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
+                          {stats.Pendiente || 0}
+                        </div>
+                        <div className="small" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                          Pendientes
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -252,82 +308,85 @@ useEffect(() => {
             <div className="row">
               <div className="col-12">
                 <div className="card border-0 shadow-sm">
-                  <div className="card-header bg-white border-bottom">
+                  <div className="card-header border-bottom">
                     <div className="d-flex justify-content-between align-items-center">
-                      <h5 className="mb-0 fw-bold text-dark">Últimos Informes Cargados</h5>
-                      <button className="btn btn-dark btn-sm">
+                      <h5 className="mb-0 fw-bold" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
+                        Últimos Informes Cargados
+                      </h5>
+                      <button className={`btn ${isDark ? 'btn-light' : 'btn-dark'} btn-sm`}>
                         Ver Todos
                       </button>
                     </div>
                   </div>
-                  <div className="card-body p-4 bg-white rounded-bottom shadow-sm">
-                  <div className="table-responsive">
-                    <table className="table table-hover align-middle text-nowrap">
-                      <thead className="table-light">
-                        <tr>
-                          <th className="fw-bold text-secondary">Departamento</th>
-                          <th className="fw-bold text-secondary">Localidad</th>
-                          <th className="fw-bold text-secondary">Tipo</th>
-                          <th className="fw-bold text-secondary">Fecha</th>
-                          <th className="fw-bold text-secondary">Título</th>
-                          <th className="fw-bold text-secondary">Estado</th>
-                          <th className="fw-bold text-secondary text-center">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        { informes.length > 0 ? informes.map((informe) => (
-                          <tr key={informe.id} className="border-bottom">
-                            <td className="py-3">
-                              <span className="fw-semibold text-dark">{informe.department.name}</span>
-                            </td>
-                            <td className="py-3 text-muted">
-                              {informe.locality.name}
-                            </td>
-                            <td className="py-3">
-                              <span className={`badge rounded-pill ${getBadgeClass(informe.type_report.name)} text-white px-3`}>
-                                {informe.type_report.name}
-                              </span>
-                            </td>
-                            <td className="py-3 text-muted">
-                              {formatFecha(informe.date)}
-                            </td>
-                            <td className="py-3 text-dark">
-                              {informe.title}
-                            </td>
-                            <td className="py-3">
-                              <span className={`badge rounded-pill ${getEstadoBadge(informe.status)} text-white px-3`}>
-                                {informe.status || "Pendiente"}
-                              </span>
-                            </td>
-                            <td className="py-3 text-center">
-                              <div className="d-flex justify-content-center gap-2">
-                                <button 
-                                  className="btn btn-sm btn-outline-primary d-flex align-items-center"
-                                  onClick={() => router.push(`/reports/view/${informe.id}`)}
-                                >
-                                  <i className="bi bi-eye me-1"></i> Ver
-                                </button>
-                                <button 
-                                  className="btn btn-sm btn-outline-secondary d-flex align-items-center"
-                                  onClick={() => router.push(`/reports/edit/${informe.id}`)}
-                                >
-                                  <i className="bi bi-pencil me-1"></i> Editar
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )) : (
+                  <div className="card-body p-4 rounded-bottom shadow-sm">
+                    <div className="table-responsive">
+                      <table className="table table-hover align-middle text-nowrap">
+                        <thead className={isDark ? '' : 'table-light'}>
                           <tr>
-                            <td colSpan={7} className="text-center">
-                             Aun no hay informes cargados!
-                            </td>
+                            <th className="fw-bold" style={{color: isDark ? '#ffffff' : 'inherit'}}>Departamento</th>
+                            <th className="fw-bold" style={{color: isDark ? '#ffffff' : 'inherit'}}>Localidad</th>
+                            <th className="fw-bold" style={{color: isDark ? '#ffffff' : 'inherit'}}>Tipo</th>
+                            <th className="fw-bold" style={{color: isDark ? '#ffffff' : 'inherit'}}>Fecha</th>
+                            <th className="fw-bold" style={{color: isDark ? '#ffffff' : 'inherit'}}>Título</th>
+                            <th className="fw-bold" style={{color: isDark ? '#ffffff' : 'inherit'}}>Estado</th>
+                            <th className="fw-bold text-center" style={{color: isDark ? '#ffffff' : 'inherit'}}>Acciones</th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {informes.length > 0 ? informes.map((informe) => (
+                            <tr key={informe.id} className="border-bottom">
+                              <td className="py-3">
+                                <span className="fw-semibold" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
+                                  {informe.department.name}
+                                </span>
+                              </td>
+                              <td className="py-3" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                                {informe.locality.name}
+                              </td>
+                              <td className="py-3">
+                                <span className={`badge rounded-pill ${getBadgeClass(informe.type_report.name)} text-white px-3`}>
+                                  {informe.type_report.name}
+                                </span>
+                              </td>
+                              <td className="py-3" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                                {formatFecha(informe.date)}
+                              </td>
+                              <td className="py-3" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
+                                {informe.title}
+                              </td>
+                              <td className="py-3">
+                                <span className={`badge rounded-pill ${getEstadoBadge(informe.status)} text-white px-3`}>
+                                  {informe.status || "Pendiente"}
+                                </span>
+                              </td>
+                              <td className="py-3 text-center">
+                                <div className="d-flex justify-content-center gap-2">
+                                  <button 
+                                    className={`btn btn-sm ${isDark ? 'btn-outline-light' : 'btn-outline-primary'} d-flex align-items-center`}
+                                    onClick={() => router.push(`/reports/view/${informe.id}`)}
+                                  >
+                                    <i className="bi bi-eye me-1"></i> Ver
+                                  </button>
+                                  <button 
+                                    className={`btn btn-sm ${isDark ? 'btn-outline-secondary' : 'btn-outline-secondary'} d-flex align-items-center`}
+                                    onClick={() => router.push(`/reports/edit/${informe.id}`)}
+                                  >
+                                    <i className="bi bi-pencil me-1"></i> Editar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )) : (
+                            <tr>
+                              <td colSpan={7} className="text-center" style={{color: isDark ? '#ffffff' : 'inherit'}}>
+                                Aun no hay informes cargados!
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-
                 </div>
               </div>
             </div>
