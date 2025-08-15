@@ -1,3 +1,6 @@
+/* Importar Bootstrap */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
 /* Variables de tema - Paleta de colores optimizada */
 :root {
   /* Modo claro - Tonos suaves y profesionales */
@@ -98,14 +101,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
   line-height: 1.6;
-}
-
 * {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
 
 a {
   color: var(--primary-color);
@@ -493,4 +494,353 @@ a:hover {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Estilos específicos para la aplicación */
+
+/* Filter Panel mejorado */
+.filter-panel {
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.filter-panel:hover {
+  transform: translateY(-2px);
+}
+
+.filter-panel .card-header {
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary)) !important;
+  border-bottom: 2px solid var(--primary-color) !important;
+}
+
+/* Tabla de informes mejorada */
+.reports-table {
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -1px var(--shadow) !important;
+}
+
+.reports-table .table {
+  margin-bottom: 0 !important;
+}
+
+.reports-table thead th {
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary)) !important;
+  color: var(--text-primary) !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+  padding: 1rem 0.75rem;
+  border: none !important;
+  border-bottom: 2px solid var(--border-color) !important;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.reports-table tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+
+.reports-table tbody tr:hover {
+  background-color: var(--bg-secondary) !important;
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px var(--shadow-hover) !important;
+}
+
+.reports-table tbody tr:last-child {
+  border-bottom: none !important;
+}
+
+.reports-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border: none !important;
+}
+
+.reports-table .btn-group .btn {
+  border-radius: 0.375rem !important;
+  margin: 0 0.125rem;
+  transition: all 0.2s ease;
+}
+
+.reports-table .btn-group .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--shadow-hover) !important;
+}
+
+/* Badges en la tabla */
+.reports-table .badge {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+/* Paginación mejorada */
+.pagination-container {
+  background-color: var(--bg-card) !important;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px var(--shadow) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* Users Table Styles */
+.users-table {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.users-table thead th {
+  background: var(--bg-secondary);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  color: var(--text-primary);
+  font-weight: 600;
+  padding: 1rem 0.75rem;
+  border-bottom: 2px solid var(--border-color);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.users-table tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.users-table tbody tr:hover {
+  background-color: var(--bg-secondary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.users-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Avatar Circle */
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.avatar-circle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pagination {
+  margin-bottom: 0 !important;
+  gap: 0.25rem;
+}
+
+.pagination .page-item .page-link {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin: 0 0.125rem;
+}
+
+.pagination .page-item .page-link:hover {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--shadow-hover) !important;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px var(--shadow-hover) !important;
+}
+
+.pagination .page-item.disabled .page-link {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-light) !important;
+  color: var(--text-muted) !important;
+  opacity: 0.6;
+}
+
+/* Información de paginación */
+.pagination-info {
+  color: var(--text-secondary) !important;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* Estados de carga y error mejorados */
+.loading-state {
+  background-color: var(--bg-card) !important;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  border: 1px solid var(--border-color) !important;
+}
+
+.loading-state .spinner-border {
+  color: var(--primary-color) !important;
+  width: 3rem;
+  height: 3rem;
+}
+
+.error-state {
+  border-radius: 0.75rem !important;
+  border: 1px solid var(--danger-color) !important;
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+.empty-state {
+  background-color: var(--bg-card) !important;
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  border: 2px dashed var(--border-color) !important;
+}
+
+.empty-state i {
+  color: var(--text-muted) !important;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Filtros activos mejorados */
+.active-filters {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  border-radius: 0.75rem !important;
+  padding: 1rem 1.25rem;
+}
+
+.active-filters .badge {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  margin: 0.125rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+/* Responsive mejoras */
+@media (max-width: 768px) {
+  .filter-panel .card-body {
+    padding: 1.5rem !important;
+  }
+  
+  .reports-table {
+    font-size: 0.875rem;
+  }
+  
+  .reports-table thead th,
+  .reports-table tbody td {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .pagination .page-item .page-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .pagination-container {
+    padding: 1rem;
+  }
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Transiciones suaves para cambio de tema */
+.card,
+.navbar,
+.btn,
+.form-control,
+.form-select,
+.table,
+.modal-content,
+.alert,
+.badge,
+.dropdown-menu {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Transiciones específicas para elementos interactivos */
+.btn:hover,
+.card:hover,
+.table tbody tr:hover {
+  transition: all 0.2s ease !important;
+}
+
+/* Transición suave para el body */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease !important;
+}
+
+/* Transición para iconos */
+i,
+.fas,
+.far,
+.fab {
+  transition: color 0.3s ease !important;
+}
+
+/* Mejoras de accesibilidad */
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible {
+  outline: 2px solid var(--primary-color) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Estados de hover mejorados */
+.card:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
 }

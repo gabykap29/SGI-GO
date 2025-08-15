@@ -1,6 +1,7 @@
 package users
 
 import (
+	utils_auth "sgi-go/auth/utils"
 	model_user "sgi-go/entities"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,20 @@ func GetUser(r *gin.RouterGroup) {
 			return
 		}
 		c.JSON(200, gin.H{"user": user})
+	})
+	r.GET("/user/getUsername", func(c *gin.Context) {
+		user, err := utils_auth.DecodeJWT(c.Request.Header.Get("Authorization"))
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		userId, err := GetUserById(user)
+
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"user": userId.Name})
 	})
 	r.POST("/users", func(c *gin.Context) {
 		var user model_user.User

@@ -2,17 +2,20 @@
 import { useState, useEffect } from 'react';
 import { FileText, Save, ArrowLeft, Menu, Users, Calendar, MapPin, FileType, User, AlertCircle, Edit, Import } from 'lucide-react';
 import { Sidebar } from '../../../../../components/Sidebard';
+import { Header } from '../../../../../components/Header';
 import { getDepartments } from '../../../../../hooks/handleDepartments';
 import { getLocalities } from '../../../../../hooks/handleLocalities';
 import { getTypeReports } from '../../../../../hooks/handleTypeReports';
-//import { UpdateReport, getReportById } from '../../../../hooks/handleReports';
+import { UpdateReport, getReportById } from '../../../../../hooks/handleReports';
 import { useRouter } from 'next/navigation';
 import { handleError, handleSuccess } from '../../../../../hooks/toaster';
 import { Toaster } from 'sonner';
 import useTheme from '../../../../../hooks/useTheme';
 import { Sun, Moon } from 'lucide-react';
+import { useAuth } from '../../../../../hooks/useAuth';
 
 export default function EditarInforme({ params }) {
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const reportId = params?.id;
   
@@ -164,6 +167,20 @@ export default function EditarInforme({ params }) {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center min-vh-100">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center min-vh-100">
@@ -191,70 +208,32 @@ export default function EditarInforme({ params }) {
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
         />
         <div className={`flex-grow-1 `}>
-          {/* Header */}
-          <nav className="navbar navbar-expand-lg">
-            <div className="container-fluid">
-              <div className="d-flex align-items-center">
-                <button 
-                  className="btn btn-secondary me-2"
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  aria-label="Contraer/Expandir sidebar"
-                >
-                  <Menu size={20} />
-                </button>
-                <a className="navbar-brand fw-bold" href="#">
-                  <FileText className="me-2" size={24} />
-                  SGI - Sistema de Gestión de Informes
-                </a>
-              </div>
-              <div className="navbar-nav ms-auto">
-                <button 
-                  className="theme-toggle me-3"
-                  onClick={toggleTheme}
-                  title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-                >
-                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
-                <a className="nav-link" href="#">
-                  <Users size={18} className="me-1" />
-                  Usuario Admin
-                </a>
-              </div>
-            </div>
-          </nav>
+          <Header 
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarCollapsed={setSidebarCollapsed}
+            isDark={isDark}
+            toggleTheme={toggleTheme}
+          />
           
           <div className="container-fluid py-4 min-vh-100">
-            {/* Título de la página */}
-            <div className="row mb-4">
-              <div className="col-12">
-                <div className="p-4 rounded shadow-sm bg-secondary border-start border-4 border-warning">
-                  <div className="d-flex align-items-center justify-content-between mb-2">
-                    <div className="d-flex align-items-center">
-                      <Edit size={28} className="me-2 text-warning" />
-                      <h1 className="h3 mb-0 text-primary">Editar Informe</h1>
-                    </div>
+            {/* Title Card */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h1 className="h3 mb-1">Editar Informe #{formData.id}</h1>
+                    <p className="text-muted mb-0">Modifica los campos necesarios para actualizar el informe</p>
+                  </div>
+                  <div className="d-flex align-items-center">
+                    <i className="fas fa-edit fa-2x text-primary me-3"></i>
                     <button 
                       className="btn btn-outline-secondary d-flex align-items-center"
                       onClick={handleCancel}
                     >
-                      <ArrowLeft size={18} className="me-1" />
+                      <i className="fas fa-arrow-left me-1"></i>
                       Volver
                     </button>
                   </div>
-                  <p className="text-muted mb-1">Modifique los campos necesarios para actualizar el informe.</p>
-                  <nav aria-label="breadcrumb">
-                    <ol className="breadcrumb mb-0">
-                      <li className="breadcrumb-item">
-                        <a href="#" className="text-decoration-none">Inicio</a>
-                      </li>
-                      <li className="breadcrumb-item">
-                        <a href="#" className="text-decoration-none">Informes</a>
-                      </li>
-                      <li className="breadcrumb-item active" aria-current="page">
-                        Editar Informe #{formData.id}
-                      </li>
-                    </ol>
-                  </nav>
                 </div>
               </div>
             </div>

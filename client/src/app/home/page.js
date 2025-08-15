@@ -3,10 +3,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, TrendingUp, AlertTriangle, CheckCircle, Clock, Users, Menu, X, Sun, Moon } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebard';
+import { Header } from '../../../components/Header';
 import { getReports } from '../../../hooks/handleReports';
 import useTheme from '../../../hooks/useTheme';
+import { useAuth } from '../../../hooks/useAuth';
 
 export default function DashboardInicio() {
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [informes, setInformes] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -107,6 +110,20 @@ useEffect(() => {
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center min-vh-100">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <>
       <link 
@@ -183,43 +200,19 @@ useEffect(() => {
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
         />
         <div className="flex-grow-1 min-vh-100">
-          {/* Header */}
-          <nav className="navbar navbar-expand-lg">
-            <div className="container-fluid">
-              <div className="d-flex align-items-center">
-                <button 
-                  className="btn btn-secondary me-2"
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  aria-label="Contraer/Expandir sidebar"
-                >
-                  <Menu size={20} />
-                </button>
-                <a className="navbar-brand fw-bold" href="#" style={{color: isDark ? '#ffffff' : 'inherit'}}>
-                  <FileText className="me-2" size={24} />
-                  SGI - Sistema de Gestión de Informes
-                </a>
-              </div>
-              <div className="navbar-nav ms-auto">
-                <button 
-                  className="theme-toggle me-3"
-                  onClick={toggleTheme}
-                  title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-                >
-                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
-                <a className="nav-link" href="#" style={{color: isDark ? '#ffffff' : 'inherit'}}>
-                  <Users size={18} className="me-1" />
-                  Usuario Admin
-                </a>
-              </div>
-            </div>
-          </nav>
+          <Header 
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarCollapsed={setSidebarCollapsed}
+            isDark={isDark}
+            toggleTheme={toggleTheme}
+          />
           
-          <div className="container-fluid py-4">
+          <div className={isDark? "container-fluid py-4 bg-black" : "container-fluid py-4 bg-light"}>
             {/* Título de bienvenida */}
             <div className="row mb-4">
               <div className="col-12">
-                <div className={isDark? "p-4 rounded shadow-sm border-start border-4 border-dark bg-dark": "p-4 rounded shadow-sm border-start border-4 border-dark"}>
+                <div className={isDark? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark": "p-4 rounded shadow-sm border-start border-4 border-dark"}>
+
                   <div className="d-flex align-items-center mb-2">
                     <FileText size={28} className="me-2" style={{color: isDark ? '#ffffff' : 'inherit'}} />
                     <h1 className="h3 mb-0" style={{color: isDark ? '#ffffff' : 'inherit'}}>Dashboard</h1>

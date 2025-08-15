@@ -1,17 +1,21 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FileText, ArrowLeft, Menu, Users, Calendar, MapPin, FileType, User, AlertCircle, Download, Eye, Image as ImageIcon, Upload, X, File, Plus } from 'lucide-react';
+import { FileText, ArrowLeft, Menu, Users, Calendar, MapPin, FileType, User, AlertCircle, Download, Eye, Image as ImageIcon, Upload, X, File, Plus, Edit, CheckCircle } from 'lucide-react';
 import { Sidebar } from '../../../../../components/Sidebard';
-import { getReportById } from '../../../../../hooks/handleReports';
+import { Header } from '../../../../../components/Header';
+import { getReportById, UpdateReport } from '../../../../../hooks/handleReports';
 import { getFileUrl, getFileType, formatFileSize, uploadFile, validateFileType, validateFileSize, getAuthenticatedFileUrl, deleteFile } from '../../../../../hooks/handleFiles';
 import { handleError, handleSuccess } from '../../../../../hooks/toaster';
 import { Toaster } from 'sonner';
 import useTheme from '../../../../../hooks/useTheme';
 import { Sun, Moon } from 'lucide-react';
 import dayjs from 'dayjs'
+import { useAuth } from '../../../../../hooks/useAuth';
+
 
 export default function VisualizarInforme() {
+  const { isAuthenticated, isLoading } = useAuth();
   const { id } = useParams();
   const router = useRouter();
   const [report, setReport] = useState(null);
@@ -22,7 +26,42 @@ export default function VisualizarInforme() {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [fileUrls, setFileUrls] = useState({});
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState({ status: '', description: '' });
+  const [updating, setUpdating] = useState(false);
   const { theme, toggleTheme, isDark } = useTheme();
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <>
+        <link 
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" 
+          rel="stylesheet" 
+        />
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+          <div className="text-center">
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+            <p className="text-muted">Verificando autenticación...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const getBadgeClass = (tipo) => {
     switch (tipo) {
@@ -222,6 +261,62 @@ export default function VisualizarInforme() {
     setShowFileUpload(false);
   };
 
+  const handleEditClick = () => {
+    setEditData({
+      status: report.status || '',
+      description: report.description || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setUpdating(true);
+    
+    try {
+      const updateData = {
+        status: editData.status,
+        description: editData.description
+      };
+      
+      await UpdateReport(id, updateData);
+      
+      // Actualizar el informe local
+      setReport(prev => ({
+        ...prev,
+        status: editData.status,
+        description: editData.description
+      }));
+      
+      setShowEditModal(false);
+      handleSuccess('Informe actualizado exitosamente');
+    } catch (error) {
+      handleError('Error al actualizar el informe: ' + error.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setShowEditModal(false);
+    setEditData({ status: '', description: '' });
+  };
+
+  const getStatusBadgeClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'pendiente':
+        return 'bg-warning text-dark';
+      case 'en proceso':
+        return 'bg-info text-white';
+      case 'resuelto':
+        return 'bg-success text-white';
+      case 'cerrado':
+        return 'bg-secondary text-white';
+      default:
+        return 'bg-light text-dark';
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -334,37 +429,12 @@ export default function VisualizarInforme() {
       <div className="d-flex">
         <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
         <div className="flex-grow-1 min-vh-100">
-          {/* Header */}
-          <nav className="navbar navbar-expand-lg">
-            <div className="container-fluid">
-              <div className="d-flex align-items-center">
-                <button 
-                  className="btn btn-secondary me-2"
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  aria-label="Contraer/Expandir sidebar"
-                >
-                  <Menu size={20} />
-                </button>
-                <a className="navbar-brand fw-bold" href="#">
-                  <FileText className="me-2" size={24} />
-                  SGI - Sistema de Gestión de Informes
-                </a>
-              </div>
-              <div className="navbar-nav ms-auto">
-                <button 
-                  className="theme-toggle me-3"
-                  onClick={toggleTheme}
-                  title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-                >
-                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
-                <a className="nav-link" href="#">
-                  <Users size={18} className="me-1" />
-                  Usuario Admin
-                </a>
-              </div>
-            </div>
-          </nav>
+          <Header 
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarCollapsed={setSidebarCollapsed}
+            isDark={isDark}
+            toggleTheme={toggleTheme}
+          />
           
         <div className="container-fluid py-4">
           {/* Título de la página */}
@@ -446,6 +516,26 @@ export default function VisualizarInforme() {
                                     {report.type_report?.name}
                                   </span>
                                 </div>
+                              </div>
+                            </div>
+                            <div className="col-md-6">
+                              <div className="d-flex align-items-center justify-content-between mb-4 p-3 rounded-2" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}}>
+                                <div className="d-flex align-items-center">
+                                  <CheckCircle size={18} className="me-2 text-primary" />
+                                  <div>
+                                    <small className="d-block" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>Estado</small>
+                                    <span className={`badge ${getStatusBadgeClass(report.status)} px-2 py-1`}>
+                                      {report.status || 'Sin estado'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <button 
+                                  className="btn btn-outline-primary btn-sm"
+                                  onClick={handleEditClick}
+                                  title="Editar estado y descripción"
+                                >
+                                  <Edit size={14} />
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -590,6 +680,7 @@ export default function VisualizarInforme() {
                                   onClick={handleCancelUpload}
                                   disabled={uploadingFiles}
                                 >
+                                  <X size={14} className="me-1" />
                                   Cancelar
                                 </button>
                                 <button 
@@ -808,6 +899,86 @@ export default function VisualizarInforme() {
         </div>
         </div>
       </div>
+
+        {/* Modal para editar estado y descripción */}
+        {showEditModal && (
+          <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    <Edit size={20} className="me-2" />
+                    Editar Informe
+                  </h5>
+                  <button 
+                    type="button" 
+                    className="btn-close" 
+                    onClick={handleEditCancel}
+                  ></button>
+                </div>
+                <form onSubmit={handleEditSubmit}>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <label htmlFor="status" className="form-label">Estado</label>
+                      <select 
+                        className="form-select"
+                        id="status"
+                        value={editData.status}
+                        onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
+                        required
+                      >
+                        <option value="">Seleccionar estado</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En proceso">En proceso</option>
+                        <option value="Resuelto">Resuelto</option>
+                        <option value="Cerrado">Cerrado</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label htmlFor="description" className="form-label">Descripción</label>
+                      <textarea 
+                        className="form-control"
+                        id="description"
+                        rows="4"
+                        value={editData.description}
+                        onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Ingrese una descripción del informe..."
+                      ></textarea>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary"
+                      onClick={handleEditCancel}
+                      disabled={updating}
+                    >
+                      <X size={16} className="me-1" />
+                      Cancelar
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary"
+                      disabled={updating}
+                    >
+                      {updating ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Actualizando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={16} className="me-1" />
+                          Actualizar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal para ver imagen ampliada */}
         {selectedImage && (

@@ -1,7 +1,8 @@
 import {
     FileText,
     TrendingUp,
-    Users
+    Users,
+    Filter
   } from 'lucide-react';
   
   export function Sidebar({ isCollapsed, onToggle }) {
@@ -18,13 +19,16 @@ import {
         <div className="p-3 d-flex justify-content-between align-items-center">
           {!isCollapsed && (
             <h5 className="fw-bold text-white mb-0">
-              <FileText className="me-2 text-primary" size={24} />
+              <FileText className="me-2 text-primary text-white" size={24} />
               SGI
             </h5>
           )}
           {isCollapsed && (
             <div className="w-100 text-center">
-              <FileText className="text-primary" size={24} />
+              <a href="/home" className="text-decoration-none">
+                <FileText className="text-info" size={24} />
+                <span className="text-white"></span>
+              </a>
             </div>
           )}
         </div>
@@ -37,14 +41,21 @@ import {
             </a>
           </li>
           <li className="nav-item mb-2">
-            <a href="/reports/create" className="nav-link text-white d-flex align-items-center" title="Informes">
-              <FileText className="text-primary flex-shrink-0" size={20} />
-              {!isCollapsed && <span className="ms-2">Informes</span>}
+            <a href="/reports/create" className="nav-link text-white d-flex align-items-center" title="Crear Informe">
+              <FileText className="text-white flex-shrink-0" size={20} />
+              {!isCollapsed && <span className="ms-2">Crear Informe</span>}
             </a>
           </li>
           <li className="nav-item mb-2">
-            <a href="#" className="nav-link text-white d-flex align-items-center" title="Usuarios">
-              <Users className="text-secondary flex-shrink-0" size={20} />
+            <a href="/reports/list" className="nav-link text-white d-flex align-items-center" title="Filtrar Informes">
+              <Filter className="text-warning flex-shrink-0" size={20} />
+              {!isCollapsed && <span className="ms-2">Filtrar Informes</span>}
+            </a>
+          </li>
+          <li className="nav-item mb-2">
+            <a href="/users" className="nav-link text-white d-flex align-items-center" title="Usuarios">
+
+              <Users className="text-danger flex-shrink-0" size={20} />
               {!isCollapsed && <span className="ms-2">Usuarios</span>}
             </a>
           </li>

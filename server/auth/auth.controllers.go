@@ -26,6 +26,6 @@ func AuthRoutes(r *gin.RouterGroup) {
 			c.JSON(401, gin.H{"error": "Invalid credentials"})
 			return
 		}
-		c.JSON(200, gin.H{"token": result})
+		c.JSON(200, gin.H{"token": result.Token, "role": result.Role})
 	})
 }

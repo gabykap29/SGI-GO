@@ -17,5 +17,12 @@ export async function loginUser({username, password}) {
     }
 
     localStorage.setItem("token", data.token)
+    localStorage.setItem("userRole", data.role)
     return data;
+}
+
+export function logoutUser() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    window.location.href = "/";
 }

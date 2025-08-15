@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "bootstrap": "^5.3.7",
     "dayjs": "^1.11.13",
     "lucide-react": "^0.517.0",
     "next": "15.3.4",

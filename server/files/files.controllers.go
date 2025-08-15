@@ -36,4 +36,18 @@ func RegisterFileRoutes(r *gin.RouterGroup) {
 		}
 		c.File(filePath)
 	})
+	r.DELETE("/files/:id", func(c *gin.Context) {
+		id := c.Params.ByName("id")
+		if id == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Debe proporcionar un ID de archivo"})
+			return
+		}
+		message, err := DeleteFile(id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar el archivo"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": message})
+	})
+
 }

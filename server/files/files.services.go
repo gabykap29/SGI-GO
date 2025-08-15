@@ -79,3 +79,17 @@ func GetFilePatch(filename string) (string, error) {
 		return filePath, nil
 	}
 }
+
+func DeleteFile(id string) (string, error) {
+	var file entities.File
+	if err := database.DB.First(&file, id).Error; err != nil {
+		return "", err
+	}
+	if err := os.Remove(file.Path); err != nil {
+		return "", err
+	}
+	if err := database.DB.Delete(&file).Error; err != nil {
+		return "", err
+	}
+	return "Archivo eliminado", nil
+}
