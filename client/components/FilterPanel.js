@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getDepartments } from '../hooks/handleDepartments';
 import { getLocalities } from '../hooks/handleLocalities';
 import { getTypeReports } from '../hooks/handleTypeReports';
-
+import { Filter } from 'lucide-react';
 export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
     const [filters, setFilters] = useState({
         title: '',
@@ -19,6 +19,7 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
     const [localities, setLocalities] = useState([]);
     const [typeReports, setTypeReports] = useState([]);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
     useEffect(() => {
         loadDepartments();
@@ -33,6 +34,16 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
             setFilters(prev => ({ ...prev, locality_id: '' }));
         }
     }, [filters.department_id]);
+
+    // Hook para manejar el redimensionamiento de la ventana
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const loadDepartments = async () => {
         try {
@@ -84,67 +95,78 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
     const hasActiveFilters = Object.values(filters).some(value => value !== '');
 
     return (
-        <div className="filter-panel card mb-4 shadow bg-white mt-3">
-
-            <div className="card-header d-flex justify-content-between align-items-center px-4 py-3 bg-white">
+        <div 
+            className="filter-panel card mb-4 shadow" 
+            style={{ 
+                transition: 'margin-left 0.3s ease, width 0.3s ease',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                position: 'relative',
+                zIndex: 10
+            }}
+        >
+            <div className="card-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center px-3 px-md-4 py-3 gap-2" style={{ minHeight: '60px' }}>
                 <h5 className="mb-0 d-flex align-items-center fw-semibold">
-                    <i className="fas fa-filter me-2 text-primary"></i>
-                    Filtros de Búsqueda
+                    <span className="d-none d-sm-inline">Filtros de Búsqueda</span>
+                    <span className="d-inline d-sm-none">Filtros</span>
                 </h5>
-                <div className="d-flex gap-2">
+                <div className="d-flex flex-wrap gap-2 w-100 w-sm-auto justify-content-end" style={{ minWidth: windowWidth < 576 ? '100%' : 'auto' }}>
                     {hasActiveFilters && (
                         <button
                             type="button"
-                            className="btn btn-outline-danger btn-sm rounded-pill px-3"
+                            className="btn btn-outline-danger btn-sm rounded-pill px-2 px-sm-3 flex-fill flex-sm-grow-0"
                             onClick={clearFilters}
                             title="Limpiar filtros"
                             aria-label="Limpiar filtros"
                         >
-                            <i className="fas fa-times me-1"></i>
-                            Limpiar
+                            <Filter size={15}/>
+                            <span className="d-none d-sm-inline">Limpiar</span>
                         </button>
                     )}
                     <button
                         type="button"
-                        className="btn btn-outline-primary btn-sm rounded-pill px-3"
+                        className="btn btn-outline-primary btn-sm rounded-pill px-2 px-sm-3 flex-fill flex-sm-grow-0"
                         onClick={() => setIsExpanded(!isExpanded)}
                         aria-expanded={isExpanded}
                         aria-label={isExpanded ? 'Contraer filtros' : 'Expandir filtros'}
                     >
-                        <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} me-1`}></i>
-                        {isExpanded ? 'Contraer' : 'Expandir'}
+                        <Filter size={15}/>
+                        <span className="d-none d-sm-inline">{isExpanded ? 'Contraer' : 'Expandir'}</span>
                     </button>
                 </div>
             </div>
 
             <div className={`collapse ${isExpanded ? 'show' : ''}`}>
-                <div className="card-body p-4">
-                    <div className="row g-4">
+                <div className="card-body p-3 p-md-4">
+                    <div className="row g-3 g-md-4">
                         {/* Título */}
-                        <div className="col-md-6">
-                            <label htmlFor="filter-title" className="form-label fw-semibold d-flex align-items-center">
+                        <div className="col-12 col-sm-6 col-lg-4">
+                            <label htmlFor="filter-title" className="form-label fw-semibold d-flex align-items-center" style={{ fontSize: windowWidth < 576 ? '0.9rem' : '1rem' }}>
                                 <i className="fas fa-heading me-2 text-primary"></i>
-                                Título
+                                <span className="d-none d-sm-inline">Título</span>
+                                <span className="d-inline d-sm-none">Título</span>
                             </label>
                             <input
                                 type="text"
                                 id="filter-title"
                                 className="form-control rounded-3 shadow-sm"
-                                placeholder="Buscar por título..."
+                                placeholder={windowWidth < 576 ? "Título..." : "Buscar por título..."}
                                 value={filters.title}
                                 onChange={(e) => handleFilterChange('title', e.target.value)}
                                 aria-describedby="filter-title-help"
+                                style={{ fontSize: windowWidth < 576 ? '0.9rem' : '1rem' }}
                             />
-                            <div id="filter-title-help" className="form-text text-muted mt-1 small">
+                            <div id="filter-title-help" className="form-text text-muted mt-1 small d-none d-md-block">
                                 Ingresa palabras clave del título.
                             </div>
                         </div>
 
                         {/* Departamento */}
-                        <div className="col-md-6">
+                        <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-department" className="form-label fw-semibold d-flex align-items-center">
                                 <i className="fas fa-building me-2 text-primary"></i>
-                                Departamento
+                                <span className="d-none d-sm-inline">Departamento</span>
+                                <span className="d-inline d-sm-none">Depto.</span>
                             </label>
                             <select
                                 id="filter-department"
@@ -153,23 +175,24 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                                 onChange={(e) => handleFilterChange('department_id', e.target.value)}
                                 aria-describedby="filter-department-help"
                             >
-                                <option value="">Todos los departamentos</option>
+                                <option value="">Todos</option>
                                 {departments.map((dept) => (
                                     <option key={dept.id} value={dept.id}>
                                         {dept.name}
                                     </option>
                                 ))}
                             </select>
-                            <div id="filter-department-help" className="form-text text-muted mt-1 small">
+                            <div id="filter-department-help" className="form-text text-muted mt-1 small d-none d-md-block">
                                 Selecciona un departamento.
                             </div>
                         </div>
 
                         {/* Localidad */}
-                        <div className="col-md-6">
+                        <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-locality" className="form-label fw-semibold d-flex align-items-center">
                                 <i className="fas fa-map-marker-alt me-2 text-primary"></i>
-                                Localidad
+                                <span className="d-none d-sm-inline">Localidad</span>
+                                <span className="d-inline d-sm-none">Local.</span>
                             </label>
                             <select
                                 id="filter-locality"
@@ -179,23 +202,24 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                                 disabled={!filters.department_id}
                                 aria-describedby="filter-locality-help"
                             >
-                                <option value="">Todas las localidades</option>
+                                <option value="">Todas</option>
                                 {localities.map((locality) => (
                                     <option key={locality.id} value={locality.id}>
                                         {locality.name}
                                     </option>
                                 ))}
                             </select>
-                            <div id="filter-locality-help" className="form-text text-muted mt-1 small">
-                                Selecciona una localidad (requiere departamento).
+                            <div id="filter-locality-help" className="form-text text-muted mt-1 small d-none d-md-block">
+                                Selecciona una localidad.
                             </div>
                         </div>
 
                         {/* Tipo de Informe */}
-                        <div className="col-md-6">
+                        <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-type" className="form-label fw-semibold d-flex align-items-center">
                                 <i className="fas fa-tags me-2 text-primary"></i>
-                                Tipo de Informe
+                                <span className="d-none d-sm-inline">Tipo de Informe</span>
+                                <span className="d-inline d-sm-none">Tipo</span>
                             </label>
                             <select
                                 id="filter-type"
@@ -204,20 +228,20 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                                 onChange={(e) => handleFilterChange('type_report_id', e.target.value)}
                                 aria-describedby="filter-type-help"
                             >
-                                <option value="">Todos los tipos</option>
+                                <option value="">Todos</option>
                                 {typeReports.map((type) => (
                                     <option key={type.id} value={type.id}>
                                         {type.name}
                                     </option>
                                 ))}
                             </select>
-                            <div id="filter-type-help" className="form-text text-muted mt-1 small">
+                            <div id="filter-type-help" className="form-text text-muted mt-1 small d-none d-md-block">
                                 Selecciona un tipo de informe.
                             </div>
                         </div>
 
                         {/* Fecha */}
-                        <div className="col-md-6">
+                        <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-date" className="form-label fw-semibold d-flex align-items-center">
                                 <i className="fas fa-calendar me-2 text-primary"></i>
                                 Fecha
@@ -230,27 +254,29 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                                 onChange={(e) => handleFilterChange('date', e.target.value)}
                                 aria-describedby="filter-date-help"
                             />
-                            <div id="filter-date-help" className="form-text text-muted mt-1 small">
+                            <div id="filter-date-help" className="form-text text-muted mt-1 small d-none d-md-block">
                                 Selecciona una fecha específica.
                             </div>
                         </div>
 
                         {/* Contenido */}
-                        <div className="col-md-6">
+                        <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-content" className="form-label fw-semibold d-flex align-items-center">
                                 <i className="fas fa-file-alt me-2 text-primary"></i>
-                                Contenido
+                                <span className="d-none d-sm-inline">Contenido</span>
+                                <span className="d-inline d-sm-none">Cont.</span>
                             </label>
                             <input
                                 type="text"
                                 id="filter-content"
                                 className="form-control rounded-3 shadow-sm"
-                                placeholder="Buscar en contenido..."
+                                placeholder={windowWidth < 576 ? "Contenido..." : "Buscar contenido..."}
                                 value={filters.content}
                                 onChange={(e) => handleFilterChange('content', e.target.value)}
                                 aria-describedby="filter-content-help"
+                                style={{ fontSize: windowWidth < 576 ? '0.9rem' : '1rem' }}
                             />
-                            <div id="filter-content-help" className="form-text text-muted mt-1 small">
+                            <div id="filter-content-help" className="form-text text-muted mt-1 small d-none d-md-block">
                                 Busca palabras clave en el contenido.
                             </div>
                         </div>
@@ -259,18 +285,20 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                         <div className="col-12">
                             <label htmlFor="filter-description" className="form-label fw-semibold d-flex align-items-center">
                                 <i className="fas fa-align-left me-2 text-primary"></i>
-                                Descripción
+                                <span className="d-none d-sm-inline">Descripción</span>
+                                <span className="d-inline d-sm-none">Desc.</span>
                             </label>
                             <input
                                 type="text"
                                 id="filter-description"
                                 className="form-control rounded-3 shadow-sm"
-                                placeholder="Buscar en descripción..."
+                                placeholder={windowWidth < 576 ? "Descripción..." : "Buscar descripción..."}
                                 value={filters.description}
                                 onChange={(e) => handleFilterChange('description', e.target.value)}
                                 aria-describedby="filter-description-help"
+                                style={{ fontSize: windowWidth < 576 ? '0.9rem' : '1rem' }}
                             />
-                            <div id="filter-description-help" className="form-text text-muted mt-1 small">
+                            <div id="filter-description-help" className="form-text text-muted mt-1 small d-none d-md-block">
                                 Busca palabras clave en la descripción.
                             </div>
                         </div>
@@ -278,17 +306,21 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
 
                     {/* Indicador de filtros activos */}
                     {hasActiveFilters && (
-                        <div className="mt-4">
-                            <div className="alert alert-primary d-flex align-items-center mb-0 shadow-sm rounded-3 border-0">
-                                <i className="fas fa-info-circle me-2"></i>
-                                <span className="fw-medium">Filtros activos aplicados</span>
+                        <div className="mt-3 mt-md-4">
+                            <div className="alert alert-primary d-flex flex-column flex-sm-row align-items-start align-items-sm-center mb-0 shadow-sm rounded-3 border-0 gap-2">
+                                <div className="d-flex align-items-center">
+                                    <i className="fas fa-info-circle me-2"></i>
+                                    <span className="fw-medium">Filtros activos aplicados</span>
+                                </div>
                                 <button
                                     type="button"
-                                    className="btn btn-link text-primary btn-sm ms-auto p-0 fw-semibold"
+                                    className="btn btn-link text-primary btn-sm ms-auto p-0 fw-semibold align-self-end align-self-sm-center"
                                     onClick={clearFilters}
                                     aria-label="Limpiar todos los filtros"
                                 >
-                                    Limpiar todos
+                                    <i className="fas fa-times me-1 d-sm-none"></i>
+                                    <span className="d-none d-sm-inline">Limpiar todos</span>
+                                    <span className="d-inline d-sm-none">Limpiar</span>
                                 </button>
                             </div>
                         </div>

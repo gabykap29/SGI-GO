@@ -60,7 +60,7 @@ func GetReports(query *query, page int64, limit int64) ([]entities.Report, int64
 func GetReportById(id int64) (*entities.Report, error) {
 	var report entities.Report
 	result := database.DB.Preload("Department").Preload("Locality").Preload("TypeReport").Preload("TypeReport").Preload("Persons").Preload("Files").Preload("User", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id", "username")
+		return db.Select("id", "username", "name", "last_name")
 	}).First(&report, id)
 	if result.Error != nil {
 		return nil, result.Error
@@ -100,6 +100,7 @@ func EditReport(id int64, report *entities.Report) (*entities.Report, error) {
 	existingReport.TypeReportID = report.TypeReportID
 	existingReport.Content = report.Content
 	existingReport.Description = report.Description
+	existingReport.Status = report.Status
 
 	result = database.DB.Save(&existingReport)
 	if result.Error != nil {
@@ -122,6 +123,36 @@ func DeleteReport(id int64) error {
 	}
 
 	return nil
+}
+
+func UpdateReportStatus(id int64, status string) (*entities.Report, error) {
+	// Validar estados permitidos
+	validStatuses := []string{"pending", "complete", "urgent"}
+	validStatus := false
+	for _, validSt := range validStatuses {
+		if status == validSt {
+			validStatus = true
+			break
+		}
+	}
+	if !validStatus {
+		return nil, errors.New("Estado inválido. Los estados permitidos son: pending, complete, urgent")
+	}
+
+	var existingReport entities.Report
+	result := database.DB.First(&existingReport, id)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	existingReport.Status = status
+
+	result = database.DB.Save(&existingReport)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &existingReport, nil
 }
 
 func AddPersonToReport(reportID int64, personID int64) (string, error) {
@@ -159,4 +190,42 @@ func AddPersonToReport(reportID int64, personID int64) (string, error) {
 	}
 
 	return "Persona vinculada al informe ", nil
+}
+
+func RemovePersonFromReport(reportID int64, personID int64) (string, error) {
+	var report entities.Report
+	result := database.DB.First(&report, reportID)
+	if result.Error != nil {
+		return "Error", result.Error
+	}
+
+	var person entities.Person
+	result = database.DB.First(&person, personID)
+	if result.Error != nil {
+		return "Error", result.Error
+	}
+
+	// Verificar si la relación existe
+	var exists bool
+	err := database.DB.
+		Table("person_report").
+		Where("report_id = ? AND person_id = ?", reportID, personID).
+		Select("count(*) > 0").
+		Find(&exists).Error
+
+	if err != nil {
+		return "Error", err
+	}
+
+	if !exists {
+		return "Error", errors.New("La persona no está asignada a este informe")
+	}
+
+	// Remover la asociación
+	database.DB.Model(&report).Association("Persons").Delete(&person)
+	if result.Error != nil {
+		return "Error", result.Error
+	}
+
+	return "Persona desvinculada del informe", nil
 }

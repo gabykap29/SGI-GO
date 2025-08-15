@@ -42,6 +42,15 @@ export const getFileUrl = (filename) => {
   return `${API_URL}/api/files/${filename}`;
 };
 
+// Función para obtener la URL de un archivo con token de autenticación
+export const getAuthenticatedFileUrlDirect = (filename) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return null;
+  }
+  return `${API_URL}/api/files/${filename}?token=${token}`;
+};
+
 // Función para obtener un archivo con autenticación y convertirlo a blob URL
 export const getAuthenticatedFileUrl = async (filename) => {
   try {
@@ -64,6 +73,32 @@ export const getAuthenticatedFileUrl = async (filename) => {
     return URL.createObjectURL(blob);
   } catch (error) {
     console.error('Error getting authenticated file:', error);
+    return null;
+  }
+};
+
+// Función para obtener la URL de un archivo con autenticación sin convertir a blob
+export const getAuthenticatedFileUrlNonBlob = async (filename) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No se encontró el token de autenticación');
+    }
+
+    const response = await fetch(`${API_URL}/api/files/${filename}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al obtener el archivo');
+    }
+
+    // Retornar la URL de la respuesta directamente
+    return response.url;
+  } catch (error) {
+    console.error('Error getting authenticated file URL:', error);
     return null;
   }
 };

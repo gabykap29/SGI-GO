@@ -24,7 +24,7 @@ func main() {
 	r := gin.Default()
 	config := cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"}, // O la URL de tu frontend
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,

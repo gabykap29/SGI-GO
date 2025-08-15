@@ -216,7 +216,7 @@ export default function GestionUsuarios() {
         />
         
         <div className={`d-flex ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}>
-          <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+          <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} isDark={true} />
           <div className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}>
             <Header 
               sidebarCollapsed={sidebarCollapsed}
@@ -361,8 +361,11 @@ export default function GestionUsuarios() {
       </style>
       
       <div className={`d-flex ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}>
-        <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-        <div className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}>
+        <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} isDark={true} />
+        <div 
+          className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}
+          style={{ marginLeft: sidebarCollapsed ? '70px' : '250px', transition: 'margin-left 0.3s ease' }}
+        >
           <Header 
             sidebarCollapsed={sidebarCollapsed}
             setSidebarCollapsed={setSidebarCollapsed}

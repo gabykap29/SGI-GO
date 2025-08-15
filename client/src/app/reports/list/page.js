@@ -139,12 +139,12 @@ export default function ReportsListPage() {
 
             <div className="d-flex">
                 {/* Sidebar */}
-                <Sidebar isCollapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+                <Sidebar isCollapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} isDark={true} />
 
                 {/* Main content */}
-                <main className="flex-grow-1 p-4" style={{ marginLeft: sidebarOpen ? '0' : '0', transition: 'margin-left 0.3s ease' }}>
+                <main className="flex-grow-1 p-4" style={{ marginLeft: sidebarOpen ? '250px' : '70px', width: sidebarOpen ? 'calc(100% - 250px)' : 'calc(100% - 70px)', transition: 'margin-left 0.3s ease, width 0.3s ease' }}>
                         {/* Title Card */}
-                <div className={isDark ? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark": "p-4 rounded shadow-sm border-start border-4 border-secondary bg-white"}>
+                        <div className={isDark ? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark": "p-4 rounded shadow-sm border-start border-4 border-secondary bg-white"}>
 
                             <div className="card-body">
                                 <div className="d-flex justify-content-between align-items-center">

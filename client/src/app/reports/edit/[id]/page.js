@@ -1,12 +1,13 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { FileText, Save, ArrowLeft, Menu, Users, Calendar, MapPin, FileType, User, AlertCircle, Edit, Import } from 'lucide-react';
+import { FileText, Save, ArrowLeft, Menu, Users, Calendar, MapPin, FileType, User, AlertCircle, Edit, Import, UserPlus } from 'lucide-react';
 import { Sidebar } from '../../../../../components/Sidebard';
 import { Header } from '../../../../../components/Header';
+import { AddPersonModal } from '../../../../../components/AddPersonModal';
 import { getDepartments } from '../../../../../hooks/handleDepartments';
 import { getLocalities } from '../../../../../hooks/handleLocalities';
 import { getTypeReports } from '../../../../../hooks/handleTypeReports';
-import { UpdateReport, getReportById } from '../../../../../hooks/handleReports';
+import { UpdateReport, getReportById, addPersonToReport, removePersonFromReport } from '../../../../../hooks/handleReports';
 import { useRouter } from 'next/navigation';
 import { handleError, handleSuccess } from '../../../../../hooks/toaster';
 import { Toaster } from 'sonner';
@@ -20,6 +21,7 @@ export default function EditarInforme({ params }) {
   const reportId = params?.id;
   
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [departments, setDepartments] = useState([]);
   const [localities, setLocalities] = useState([]);
   const [typeReports, setTypeReports] = useState([]);
@@ -36,6 +38,10 @@ export default function EditarInforme({ params }) {
     content: '',
     description: ''
   });
+  
+  // Estados para el modal de personas
+  const [showPersonModal, setShowPersonModal] = useState(false);
+  const [reportPersons, setReportPersons] = useState([]);
 
   useEffect(() => {
     async function fetchInitialData() {
@@ -63,13 +69,20 @@ export default function EditarInforme({ params }) {
               status: reportData.status,
               title: reportData.title,
               content: reportData.content,
-              description: reportData.description || ''
+              description: reportData.description || '',
+              user: reportData.user || null,
+              user_id: reportData.user_id
             });
             
             // Cargar localidades del departamento del informe
             if (reportData.department_id) {
               const localitiesData = await getLocalities(reportData.department_id);
               setLocalities(localitiesData);
+            }
+            
+            // Cargar personas vinculadas al informe
+            if (reportData.persons && Array.isArray(reportData.persons)) {
+              setReportPersons(reportData.persons);
             }
           }
         }
@@ -107,10 +120,12 @@ export default function EditarInforme({ params }) {
     locality => locality.department_id == formData.department_id
   );
 
-  // Auto-colapsar en pantallas pequeñas
+  // Auto-colapsar en pantallas pequeñas y manejar responsive
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 992) {
+      const width = window.innerWidth;
+      setWindowWidth(width);
+      if (width < 768) {
         setSidebarCollapsed(true);
       }
     };
@@ -167,6 +182,50 @@ export default function EditarInforme({ params }) {
     }
   };
 
+  // Funciones para manejar el modal de personas
+  const handleOpenPersonModal = () => {
+    setShowPersonModal(true);
+  };
+
+  const handleClosePersonModal = () => {
+    setShowPersonModal(false);
+  };
+
+  const handlePersonAdded = async (person) => {
+    // Verificar si la persona ya está en la lista
+    const personExists = reportPersons.some(p => p.id === person.id);
+    if (personExists) {
+      handleError('Esta persona ya está agregada al informe');
+      return;
+    }
+
+    try {
+      // Vincular la persona al informe en el backend
+      await addPersonToReport(formData.id, person.id);
+      
+      // Agregar a la lista local
+      setReportPersons(prev => [...prev, person]);
+      handleSuccess(`${person.name} ${person.last_name} agregado al informe`);
+    } catch (error) {
+      console.error('Error al vincular persona:', error);
+      handleError(error.message || 'Error al vincular persona al informe');
+    }
+  };
+
+  const handleRemovePerson = async (personId) => {
+    try {
+      // Desvincular la persona del informe en el backend
+      await removePersonFromReport(formData.id, personId);
+      
+      // Remover de la lista local
+      setReportPersons(prev => prev.filter(p => p.id !== personId));
+      handleSuccess('Persona removida del informe');
+    } catch (error) {
+      console.error('Error al desvincular persona:', error);
+      handleError(error.message || 'Error al remover persona del informe');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center min-vh-100">
@@ -202,12 +261,196 @@ export default function EditarInforme({ params }) {
         rel="stylesheet" 
       />
       
-      <div className="d-flex">
-        <Sidebar 
-          isCollapsed={sidebarCollapsed} 
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
-        />
-        <div className={`flex-grow-1 `}>
+      <style jsx>{`
+        .main-content {
+          margin-left: ${windowWidth >= 768 ? (sidebarCollapsed ? '70px' : '250px') : '0'};
+          width: ${windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%'};
+          transition: margin-left 0.3s ease, width 0.3s ease;
+          min-height: 100vh;
+          background-color: ${isDark ? '#1a1a1a' : '#f8f9fa'};
+          color: ${isDark ? '#ffffff' : '#000000'};
+          position: relative;
+          z-index: 1;
+        }
+        
+        .edit-card {
+          background-color: ${isDark ? '#2d2d2d' : '#ffffff'};
+          border: 1px solid ${isDark ? '#444' : '#e9ecef'};
+          border-radius: 15px;
+          box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+          transition: all 0.3s ease;
+        }
+        
+        .edit-card:hover {
+          box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .card-header-custom {
+          background: ${isDark ? 'linear-gradient(135deg, #333 0%, #444 100%)' : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)'};
+          border-bottom: 1px solid ${isDark ? '#555' : '#dee2e6'};
+          border-radius: 15px 15px 0 0;
+        }
+        
+        .form-control {
+          background-color: ${isDark ? '#444' : '#ffffff'};
+          border-color: ${isDark ? '#555' : '#ced4da'};
+          color: ${isDark ? '#ffffff' : '#000000'};
+          border-radius: 10px;
+        }
+        
+        .form-control:focus {
+          background-color: ${isDark ? '#444' : '#ffffff'};
+          border-color: #007bff;
+          color: ${isDark ? '#ffffff' : '#000000'};
+          box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+        
+        .form-control:disabled {
+          background-color: ${isDark ? '#333' : '#e9ecef'};
+          color: ${isDark ? '#888' : '#6c757d'};
+        }
+        
+        .form-select {
+          background-color: ${isDark ? '#444' : '#ffffff'};
+          border-color: ${isDark ? '#555' : '#ced4da'};
+          color: ${isDark ? '#ffffff' : '#000000'};
+          border-radius: 10px;
+        }
+        
+        .form-select:focus {
+          background-color: ${isDark ? '#444' : '#ffffff'};
+          border-color: #007bff;
+          color: ${isDark ? '#ffffff' : '#000000'};
+          box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+        
+        .form-label {
+          color: ${isDark ? '#ffffff' : '#000000'};
+          font-weight: 500;
+        }
+        
+        .btn-custom {
+          border-radius: 10px;
+          padding: 0.75rem 1.5rem;
+          font-weight: 500;
+          transition: all 0.3s ease;
+        }
+        
+        .btn-custom:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .alert-custom {
+          background-color: ${isDark ? '#2d2d2d' : '#fff3cd'};
+          border-color: ${isDark ? '#444' : '#ffeaa7'};
+          color: ${isDark ? '#ffffff' : '#856404'};
+          border-radius: 10px;
+        }
+        
+        .title-card {
+          background-color: ${isDark ? '#2d2d2d' : '#ffffff'};
+          border: 1px solid ${isDark ? '#444' : '#e9ecef'};
+          color: ${isDark ? '#ffffff' : '#000000'};
+        }
+        
+        .sidebar-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          z-index: 999;
+          display: none;
+        }
+        
+        @media (max-width: 768px) {
+          .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding: 0.5rem;
+          }
+          
+          .container-fluid {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+          }
+          
+          .edit-card {
+            margin-bottom: 1rem;
+            border-radius: 10px;
+          }
+          
+          .card-header-custom {
+            padding: 1rem;
+            border-radius: 10px 10px 0 0;
+          }
+          
+          .card-body {
+            padding: 1rem;
+          }
+          
+          .form-floating {
+            margin-bottom: 1rem;
+          }
+          
+          .btn-custom {
+            width: 100%;
+            margin-bottom: 0.5rem;
+          }
+          
+          .d-flex.gap-3 {
+            flex-direction: column;
+            gap: 0.5rem !important;
+          }
+          
+          .sidebar-overlay.show {
+            display: block;
+          }
+        }
+        
+        @media (max-width: 576px) {
+          .main-content {
+            padding: 0.25rem;
+          }
+          
+          .container-fluid {
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+          }
+          
+          .title-card .card-body {
+            padding: 1rem;
+          }
+          
+          .title-card h1 {
+            font-size: 1.5rem;
+          }
+          
+          .title-card .d-flex {
+            flex-direction: column;
+            gap: 1rem;
+          }
+          
+          .form-floating textarea {
+            min-height: 100px !important;
+          }
+          
+          .alert-custom {
+            padding: 0.75rem;
+            font-size: 0.875rem;
+          }
+        }
+      `}</style>
+      
+      <div className={`sidebar-overlay ${!sidebarCollapsed && windowWidth < 768 ? 'show' : ''}`} onClick={() => setSidebarCollapsed(true)}></div>
+      <Sidebar 
+        isCollapsed={sidebarCollapsed} 
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        isDark={true}
+      />
+      <div className="main-content">
           <Header 
             sidebarCollapsed={sidebarCollapsed}
             setSidebarCollapsed={setSidebarCollapsed}
@@ -217,7 +460,7 @@ export default function EditarInforme({ params }) {
           
           <div className="container-fluid py-4 min-vh-100">
             {/* Title Card */}
-            <div className="card shadow-sm mb-4">
+            <div className="card title-card shadow-sm mb-4">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
@@ -225,12 +468,12 @@ export default function EditarInforme({ params }) {
                     <p className="text-muted mb-0">Modifica los campos necesarios para actualizar el informe</p>
                   </div>
                   <div className="d-flex align-items-center">
-                    <i className="fas fa-edit fa-2x text-primary me-3"></i>
+                    <Edit size={32} className="text-primary me-3" />
                     <button 
-                      className="btn btn-outline-secondary d-flex align-items-center"
+                      className="btn btn-outline-secondary btn-custom d-flex align-items-center"
                       onClick={handleCancel}
                     >
-                      <i className="fas fa-arrow-left me-1"></i>
+                      <ArrowLeft size={16} className="me-1" />
                       Volver
                     </button>
                   </div>
@@ -241,8 +484,8 @@ export default function EditarInforme({ params }) {
             {/* Formulario */}
             <div className="row">
               <div className="col-12">
-                <div className="card border-0 shadow-sm">
-                  <div className="card-header bg-secondary border-bottom">
+                <div className="card edit-card border-0 shadow-sm">
+                  <div className="card-header card-header-custom border-bottom">
                     <h5 className="mb-0 fw-bold text-primary d-flex align-items-center">
                       <Edit size={20} className="me-2 text-warning" />
                       Modificar Información del Informe
@@ -265,6 +508,24 @@ export default function EditarInforme({ params }) {
                             <label htmlFor="report_id">
                               <FileText size={16} className="me-1" />
                               ID del Informe
+                            </label>
+                          </div>
+                        </div>
+                        
+                        {/* Usuario creador (solo lectura) */}
+                        <div className="col-md-6">
+                          <div className="form-floating">
+                            <input 
+                              type="text" 
+                              className="form-control" 
+                              id="created_by" 
+                              value={formData.user ? `${formData.user.name} ${formData.user.last_name} (@${formData.user.username})` : 'Cargando...'}
+                              readOnly
+                              disabled
+                            />
+                            <label htmlFor="created_by">
+                              <User size={16} className="me-1" />
+                              Creado por
                             </label>
                           </div>
                         </div>
@@ -438,18 +699,79 @@ export default function EditarInforme({ params }) {
                           </div>
                         </div>
 
+                        {/* Sexta fila - Personas involucradas */}
+                        <div className="col-12">
+                          <div className="card border-0 bg-light">
+                            <div className="card-header bg-transparent border-0 pb-0">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <h6 className="mb-0 fw-bold text-primary d-flex align-items-center">
+                                  <Users size={18} className="me-2" />
+                                  Personas Involucradas
+                                </h6>
+                                <button 
+                                  type="button"
+                                  className="btn btn-outline-primary btn-sm d-flex align-items-center"
+                                  onClick={handleOpenPersonModal}
+                                >
+                                  <UserPlus size={16} className="me-1" />
+                                  Agregar Persona
+                                </button>
+                              </div>
+                            </div>
+                            <div className="card-body pt-2">
+                              {reportPersons.length === 0 ? (
+                                <div className="text-center py-3 text-muted">
+                                  <Users size={32} className="mb-2 opacity-50" />
+                                  <p className="mb-0">No hay personas agregadas al informe</p>
+                                  <small>Haga clic en "Agregar Persona" para comenzar</small>
+                                </div>
+                              ) : (
+                                <div className="row g-2">
+                                  {reportPersons.map((person) => (
+                                    <div key={person.id} className="col-md-6 col-lg-4">
+                                      <div className="card border border-primary border-opacity-25 h-100">
+                                        <div className="card-body p-3">
+                                          <div className="d-flex justify-content-between align-items-start mb-2">
+                                            <div className="d-flex align-items-center">
+                                              <User size={16} className="text-primary me-2" />
+                                              <h6 className="mb-0 fw-semibold">{person.name} {person.last_name}</h6>
+                                            </div>
+                                            <button 
+                                              type="button"
+                                              className="btn btn-outline-danger btn-sm p-1"
+                                              onClick={() => handleRemovePerson(person.id)}
+                                              title="Remover persona"
+                                            >
+                                              <AlertCircle size={14} />
+                                            </button>
+                                          </div>
+                                          <div className="small text-muted">
+                                            <p className="mb-1"><strong>DNI:</strong> {person.dni}</p>
+                                            <p className="mb-1"><strong>Dirección:</strong> {person.address}</p>
+                                            <p className="mb-0"><strong>Localidad:</strong> {person.locality}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
                         {/* Botones de acción */}
                         <div className="col-12">
                           <div className="d-flex justify-content-end gap-3 pt-3 border-top">
                             <button 
                               type="button" 
-                              className="btn btn-outline-secondary"
+                              className="btn btn-outline-secondary btn-custom"
                               onClick={handleCancel}
                             >
                               <ArrowLeft size={18} className="me-1" />
                               Cancelar
                             </button>
-                            <button type="submit" className="btn btn-warning">
+                            <button type="submit" className="btn btn-warning btn-custom">
                               <Save size={18} className="me-1" />
                               Guardar Cambios
                             </button>
@@ -465,7 +787,7 @@ export default function EditarInforme({ params }) {
             {/* Nota informativa */}
             <div className="row mt-4">
               <div className="col-12">
-                <div className="alert alert-warning border-0 shadow-sm">
+                <div className="alert alert-custom border-0 shadow-sm">
                   <div className="d-flex align-items-center">
                     <AlertCircle size={20} className="me-2" />
                     <div>
@@ -477,14 +799,22 @@ export default function EditarInforme({ params }) {
               </div>
             </div>
           </div>
+          
+          {/* Modal para agregar personas */}
+          <AddPersonModal 
+            isOpen={showPersonModal}
+            onClose={handleClosePersonModal}
+            onPersonAdded={handlePersonAdded}
+            isDark={isDark}
+          />
+          
+          <Toaster 
+            position="top-right"
+            richColors
+            closeButton
+            duration={4000}
+          />  
         </div>
-      </div>
-      <Toaster 
-        position="top-right"
-        richColors
-        closeButton
-        duration={4000}
-      />  
     </>
   );
 }

@@ -155,7 +155,26 @@ func ReportRouter(r *gin.RouterGroup) {
 		}
 		c.JSON(200, result)
 	})
+	r.PATCH("/report/status/:id", func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		status := c.Query("status")
 
+		if err != nil {
+			c.JSON(400, gin.H{"error": "ID inválido", "details": err.Error()})
+			return
+		}
+		if status == "" {
+			c.JSON(400, gin.H{"error": "Status inválido", "details": "El status es requerido"})
+			return
+		}
+
+		report, err := UpdateReportStatus(int64(id), status)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Error al actualizar el status", "details": err.Error()})
+			return
+		}
+		c.JSON(200, report)
+	})
 	r.DELETE("/reports/:id", func(c *gin.Context) {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
@@ -173,6 +192,57 @@ func ReportRouter(r *gin.RouterGroup) {
 		c.JSON(200, gin.H{"message": "Informe eliminado correctamente."})
 	})
 
+	// Ruta para vincular persona al informe (POST)
+	r.POST("/reports/:id/persons/:person_id", func(c *gin.Context) {
+		reportID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(400, gin.H{"error": "ID de informe inválido", "details": err.Error()})
+			return
+		}
+		personID, err := strconv.Atoi(c.Param("person_id"))
+		if err != nil {
+			c.JSON(400, gin.H{"error": "ID de persona inválido", "details": err.Error()})
+			return
+		}
+
+		result, err := AddPersonToReport(int64(reportID), int64(personID))
+		if err != nil {
+			log.Println(err.Error())
+			c.JSON(400, gin.H{
+				"error":   "Error al asignar la persona al informe.",
+				"details": err.Error(),
+			})
+			return
+		}
+		c.JSON(200, result)
+	})
+
+	// Ruta para desvincular persona del informe (DELETE)
+	r.DELETE("/reports/:id/persons/:person_id", func(c *gin.Context) {
+		reportID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(400, gin.H{"error": "ID de informe inválido", "details": err.Error()})
+			return
+		}
+		personID, err := strconv.Atoi(c.Param("person_id"))
+		if err != nil {
+			c.JSON(400, gin.H{"error": "ID de persona inválido", "details": err.Error()})
+			return
+		}
+
+		result, err := RemovePersonFromReport(int64(reportID), int64(personID))
+		if err != nil {
+			log.Println(err.Error())
+			c.JSON(400, gin.H{
+				"error":   "Error al desvincular la persona del informe.",
+				"details": err.Error(),
+			})
+			return
+		}
+		c.JSON(200, result)
+	})
+
+	// Mantener ruta legacy para compatibilidad
 	r.PUT("/report/:report_id/assign/:person_id", func(c *gin.Context) {
 		reportID, err := strconv.Atoi(c.Param("report_id"))
 		if err != nil {

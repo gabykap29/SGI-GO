@@ -31,13 +31,6 @@ export function Header({
     <nav className="navbar navbar-expand-lg">
       <div className="container-fluid">
         <div className="d-flex align-items-center">
-          <button 
-            className="btn btn-secondary me-2"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            aria-label="Contraer/Expandir sidebar"
-          >
-            <Menu size={20} />
-          </button>
           <a className="navbar-brand fw-bold" href="#" style={{color: isDark ? '#ffffff' : 'inherit'}}>
             <FileText className="me-2" size={24} />
             SGI - Sistema de Gestión de Informes
@@ -55,6 +48,14 @@ export function Header({
             <Users size={18} className="me-1" />
             {username}
           </span>
+          <button 
+            className="btn btn-secondary me-3"
+            style={{ zIndex: 1001 }}
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label="Contraer/Expandir sidebar"
+          >
+            <Menu size={20} />
+          </button>
           <button 
             className="btn btn-outline-danger btn-sm"
             onClick={logoutUser}

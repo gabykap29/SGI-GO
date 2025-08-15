@@ -1,132 +1,141 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FileText, ArrowLeft, Menu, Users, Calendar, MapPin, FileType, User, AlertCircle, Download, Eye, Image as ImageIcon, Upload, X, File, Plus, Edit, CheckCircle } from 'lucide-react';
+import { FileText, ArrowLeft, Users, Calendar, MapPin, User, AlertCircle, Download, Eye, Image as ImageIcon, Upload, X, File, Plus, Edit, CheckCircle, Trash2, FileSpreadsheet, FileImage, Archive, Music, Video, FileCode, Info } from 'lucide-react';
 import { Sidebar } from '../../../../../components/Sidebard';
 import { Header } from '../../../../../components/Header';
-import { getReportById, UpdateReport } from '../../../../../hooks/handleReports';
+import { getReportById, UpdateReport, UpdateReportStatus, addPersonToReport, removePersonFromReport } from '../../../../../hooks/handleReports';
+import { AddPersonModal } from '../../../../../components/AddPersonModal';
 import { getFileUrl, getFileType, formatFileSize, uploadFile, validateFileType, validateFileSize, getAuthenticatedFileUrl, deleteFile } from '../../../../../hooks/handleFiles';
 import { handleError, handleSuccess } from '../../../../../hooks/toaster';
 import { Toaster } from 'sonner';
 import useTheme from '../../../../../hooks/useTheme';
 import { Sun, Moon } from 'lucide-react';
-import dayjs from 'dayjs'
+import dayjs from 'dayjs';
 import { useAuth } from '../../../../../hooks/useAuth';
 
+// Función para obtener el icono apropiado según el tipo de archivo
+const getFileIcon = (mimeType, size = 48) => {
+  if (!mimeType) return <File size={size} className="text-muted" />;
+  
+  const type = mimeType.toLowerCase();
+  
+  if (type.includes('pdf') || type.includes('text')) {
+    return <FileText size={size} className="text-danger" />;
+  }
+  if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) {
+    return <FileSpreadsheet size={size} className="text-success" />;
+  }
+  if (type.includes('word') || type.includes('document')) {
+    return <FileText size={size} className="text-primary" />;
+  }
+  if (type.includes('zip') || type.includes('rar') || type.includes('archive')) {
+    return <Archive size={size} className="text-warning" />;
+  }
+  if (type.includes('audio') || type.includes('music')) {
+    return <Music size={size} className="text-info" />;
+  }
+  if (type.includes('video')) {
+    return <Video size={size} className="text-purple" />;
+  }
+  if (type.includes('code') || type.includes('javascript') || type.includes('html') || type.includes('css')) {
+    return <FileCode size={size} className="text-dark" />;
+  }
+  
+  return <File size={size} className="text-muted" />;
+};
 
 export default function VisualizarInforme() {
   const { isAuthenticated, isLoading } = useAuth();
   const { id } = useParams();
   const router = useRouter();
+  const { theme, toggleTheme, isDark } = useTheme();
+  
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [reportPersons, setReportPersons] = useState([]);
+  const [showPersonModal, setShowPersonModal] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [fileUrls, setFileUrls] = useState({});
+  const [selectedImage, setSelectedImage] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState({ status: '', description: '' });
   const [updating, setUpdating] = useState(false);
-  const { theme, toggleTheme, isDark } = useTheme();
+  const [showPersonDetailsModal, setShowPersonDetailsModal] = useState(false);
+  const [selectedPersonDetails, setSelectedPersonDetails] = useState(null);
 
-  // Redirect if not authenticated
+  // Redirección por autenticación
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push('/auth/login');
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Show loading while checking authentication
-  if (isLoading) {
-    return (
-      <>
-        <link 
-          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" 
-          rel="stylesheet" 
-        />
-        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-          <div className="text-center">
-            <div className="spinner-border text-primary mb-3" role="status">
-              <span className="visually-hidden">Cargando...</span>
-            </div>
-            <p className="text-muted">Verificando autenticación...</p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // Don't render if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  const getBadgeClass = (tipo) => {
-    switch (tipo) {
-      case 'Seguridad':
-        return 'bg-danger text-white';
-      case 'Infraestructura':
-        return 'bg-dark text-white';
-      case 'Eventos Climaticos':
-        return 'bg-warning';
-      case 'Hídricos':
-        return 'bg-primary-subtle';
-      case 'Económicos':
-        return 'bg-secondary';
-      case 'Ambientales':
-        return 'bg-success';
-      case 'Sociales':
-        return 'bg-info';
-      case 'Turismo':
-        return 'bg-pink text-white';
-      case 'Deportivos':
-        return 'bg-indigo text-white';
-      case 'OTROS':
-        return 'bg-secondary';
-      default:
-        return 'bg-light';
-    }
-  };
-
+  // Manejo del sidebar responsive
   useEffect(() => {
     const handleResize = () => {
       setSidebarCollapsed(window.innerWidth < 768);
     };
-
+    
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Cargar datos del informe
   useEffect(() => {
     const fetchReport = async () => {
       try {
         setLoading(true);
         const data = await getReportById(id);
+        console.log('Datos completos del informe:', data);
+        console.log('Usuario del informe:', data?.user);
+        console.log('Archivos del informe:', data?.files);
         setReport(data);
         
-        // Cargar URLs de archivos de manera asíncrona
+        if (data.persons && Array.isArray(data.persons)) {
+          setReportPersons(data.persons);
+        }
+        
+        // Cargar URLs de archivos
         if (data.files && data.files.length > 0) {
+          console.log('Archivos encontrados:', data.files);
           const urls = {};
           for (const file of data.files) {
+            console.log('Procesando archivo:', file);
+            console.log('Tipo MIME del archivo:', file.type);
+            console.log('Es imagen?:', file.type && file.type.startsWith('image/'));
+            // El filename es el UUID que se usa para acceder al archivo
             let filename = file.filename;
             if (!filename && file.path) {
-              const pathParts = file.path.replace(/\\/g, '/').split('/');
+              // Extraer el filename del path si no está disponible directamente
+              const pathParts = file.path.split(/[\/\\]/);
               filename = pathParts[pathParts.length - 1];
             }
+            console.log('Filename UUID extraído:', filename);
             if (filename) {
+              // Usar getAuthenticatedFileUrl para manejar la autenticación correctamente
               const url = await getAuthenticatedFileUrl(filename);
+              console.log('URL generada para', filename, ':', url);
               if (url) {
-                urls[filename] = url;
+                urls[file.id] = url;
+                console.log('URL almacenada para file.id:', file.id);
+              } else {
+                console.error('Error: No se pudo generar URL para:', filename);
               }
+            } else {
+              console.error('Error: No se encontró filename para el archivo:', file);
             }
           }
+          console.log('URLs finales:', urls);
+          console.log('Cantidad de URLs generadas:', Object.keys(urls).length);
           setFileUrls(urls);
         }
       } catch (err) {
-        setError(err.message);
+        handleError('Error al cargar el informe');
       } finally {
         setLoading(false);
       }
@@ -137,9 +146,87 @@ export default function VisualizarInforme() {
     }
   }, [id]);
 
+  // Funciones auxiliares
+  const getBadgeClass = (tipo) => {
+    switch (tipo) {
+      case 'Accidente de Tránsito':
+        return 'bg-danger text-white';
+      case 'Robo':
+        return 'bg-warning text-dark';
+      case 'Vandalismo':
+        return 'bg-info text-white';
+      case 'Emergencia Médica':
+        return 'bg-success text-white';
+      case 'Incendio':
+        return 'bg-danger text-white';
+      case 'Disturbios':
+        return 'bg-secondary text-white';
+      case 'Otro':
+        return 'bg-primary text-white';
+      default:
+        return 'bg-secondary text-white';
+    }
+  };
+
+  const getStatusBadgeClass = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+      case 'pendiente':
+        return 'bg-warning text-dark';
+      case 'complete':
+      case 'completado':
+        return 'bg-success text-white';
+      case 'urgent':
+      case 'urgente':
+        return 'bg-danger text-white';
+      case 'in_progress':
+      case 'en proceso':
+        return 'bg-info text-white';
+      case 'resolved':
+      case 'resuelto':
+        return 'bg-success text-white';
+      case 'closed':
+      case 'cerrado':
+        return 'bg-secondary text-white';
+      default:
+        return 'bg-secondary text-white';
+    }
+  };
+
+  const getStatusDisplayText = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'Pendiente';
+      case 'complete':
+        return 'Completado';
+      case 'urgent':
+        return 'Urgente';
+      case 'in_progress':
+        return 'En Proceso';
+      case 'resolved':
+        return 'Resuelto';
+      case 'closed':
+        return 'Cerrado';
+      case 'pendiente':
+        return 'Pendiente';
+      case 'completado':
+        return 'Completado';
+      case 'urgente':
+        return 'Urgente';
+      case 'en proceso':
+        return 'En Proceso';
+      case 'resuelto':
+        return 'Resuelto';
+      case 'cerrado':
+        return 'Cerrado';
+      default:
+        return status || 'Sin estado';
+    }
+  };
+
+  // Manejo de archivos
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
-    const validFiles = [];
     
     files.forEach(file => {
       if (!validateFileType(file)) {
@@ -151,11 +238,9 @@ export default function VisualizarInforme() {
         handleError(`El archivo ${file.name} es demasiado grande (máximo 10MB)`);
         return;
       }
-      
-      validFiles.push(file);
     });
     
-    setSelectedFiles(prev => [...prev, ...validFiles]);
+    setSelectedFiles(prev => [...prev, ...files]);
   };
 
   const removeFile = (index) => {
@@ -163,54 +248,56 @@ export default function VisualizarInforme() {
   };
 
   const handleUploadFiles = async () => {
-    if (selectedFiles.length === 0) return;
+    if (selectedFiles.length === 0) {
+      handleError('Debe adjuntar un archivo!');
+      return;
+    }
     
     setUploadingFiles(true);
-    
     try {
       for (const file of selectedFiles) {
         const response = await uploadFile(file, id);
-        // Verificar si la respuesta es exitosa (200 o 201)
+        
         if (response && (response.status === 200 || response.status === 201)) {
-          // Actualizar después de 1.5 segundos
+          handleSuccess(`Archivo ${file.name} subido correctamente`);
           setTimeout(async () => {
             try {
               const updatedReport = await getReportById(id);
               setReport(updatedReport);
               
-              // Recargar URLs de archivos
               if (updatedReport.files && updatedReport.files.length > 0) {
                 const urls = {};
                 for (const file of updatedReport.files) {
+                  // El filename es el UUID que se usa para acceder al archivo
                   let filename = file.filename;
                   if (!filename && file.path) {
-                    const pathParts = file.path.replace(/\\/g, '/').split('/');
+                    // Extraer el filename del path si no está disponible directamente
+                    const pathParts = file.path.split(/[\/\\]/);
                     filename = pathParts[pathParts.length - 1];
                   }
                   if (filename) {
+                    // Usar getAuthenticatedFileUrl para manejar la autenticación correctamente
                     const url = await getAuthenticatedFileUrl(filename);
                     if (url) {
-                      urls[filename] = url;
+                      urls[file.id] = url;
                     }
                   }
                 }
                 setFileUrls(urls);
               }
             } catch (error) {
-              console.error('Error updating report after upload:', error);
+              console.error('Error al actualizar el informe:', error);
             }
           }, 1500);
         }
       }
       
-      // Limpiar archivos seleccionados
       setSelectedFiles([]);
       setShowFileUpload(false);
-      
-      handleSuccess('Archivos subidos exitosamente');
+      handleSuccess('Todos los archivos se han subido correctamente');
     } catch (error) {
+      handleError('Error al subir archivos');
       console.error('Error uploading files:', error);
-      handleError('Error al subir archivos: ' + error.message);
     } finally {
       setUploadingFiles(false);
     }
@@ -223,24 +310,26 @@ export default function VisualizarInforme() {
 
     try {
       await deleteFile(fileId);
+      handleSuccess(`Archivo "${fileName}" eliminado correctamente`);
       
-      // Recargar el reporte para actualizar la lista de archivos
       const updatedReport = await getReportById(id);
       setReport(updatedReport);
       
-      // Recargar URLs de archivos
       if (updatedReport.files && updatedReport.files.length > 0) {
         const urls = {};
         for (const file of updatedReport.files) {
+          // El filename es el UUID que se usa para acceder al archivo
           let filename = file.filename;
           if (!filename && file.path) {
-            const pathParts = file.path.replace(/\\/g, '/').split('/');
+            // Extraer el filename del path si no está disponible directamente
+            const pathParts = file.path.split(/[\/\\]/);
             filename = pathParts[pathParts.length - 1];
           }
           if (filename) {
+            // Usar getAuthenticatedFileUrl para manejar la autenticación correctamente
             const url = await getAuthenticatedFileUrl(filename);
             if (url) {
-              urls[filename] = url;
+              urls[file.id] = url;
             }
           }
         }
@@ -248,19 +337,40 @@ export default function VisualizarInforme() {
       } else {
         setFileUrls({});
       }
-      
-      handleSuccess('Archivo eliminado exitosamente');
     } catch (error) {
+      handleError('Error al eliminar el archivo');
       console.error('Error deleting file:', error);
-      handleError('Error al eliminar archivo: ' + error.message);
     }
   };
 
-  const handleCancelUpload = () => {
-    setSelectedFiles([]);
-    setShowFileUpload(false);
+  // Manejo de personas
+  const handlePersonAdded = async (person) => {
+    if (reportPersons.some(p => p.id === person.id)) {
+      handleError('Esta persona ya está vinculada al informe');
+      return;
+    }
+    try {
+      await addPersonToReport(id, person.id);
+      setReportPersons(prev => [...prev, person]);
+      handleSuccess(`${person.name} vinculado al informe`);
+    } catch (error) {
+      handleError('Error al vincular la persona');
+      console.error('Error adding person:', error);
+    }
   };
 
+  const handleRemovePerson = async (personId) => {
+    try {
+      await removePersonFromReport(id, personId);
+      setReportPersons(prev => prev.filter(p => p.id !== personId));
+      handleSuccess('Persona desvinculada del informe');
+    } catch (error) {
+      handleError('Error al desvincular la persona');
+      console.error('Error removing person:', error);
+    }
+  };
+
+  // Manejo de edición
   const handleEditClick = () => {
     setEditData({
       status: report.status || '',
@@ -274,14 +384,19 @@ export default function VisualizarInforme() {
     setUpdating(true);
     
     try {
-      const updateData = {
-        status: editData.status,
-        description: editData.description
-      };
+      // Si solo se está cambiando el estado, usar la función específica
+      if (editData.status !== report.status && editData.description === report.description) {
+        await UpdateReportStatus(id, editData.status);
+      } else {
+        // Si se cambian otros campos, usar la función general
+        const updateData = {
+          ...report,
+          status: editData.status,
+          description: editData.description
+        };
+        await UpdateReport(id, updateData);
+      }
       
-      await UpdateReport(id, updateData);
-      
-      // Actualizar el informe local
       setReport(prev => ({
         ...prev,
         status: editData.status,
@@ -289,9 +404,9 @@ export default function VisualizarInforme() {
       }));
       
       setShowEditModal(false);
-      handleSuccess('Informe actualizado exitosamente');
+      handleSuccess('Informe actualizado correctamente');
     } catch (error) {
-      handleError('Error al actualizar el informe: ' + error.message);
+      handleError('Error al actualizar el informe: ' + (error.message || error));
     } finally {
       setUpdating(false);
     }
@@ -302,20 +417,20 @@ export default function VisualizarInforme() {
     setEditData({ status: '', description: '' });
   };
 
-  const getStatusBadgeClass = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pendiente':
-        return 'bg-warning text-dark';
-      case 'en proceso':
-        return 'bg-info text-white';
-      case 'resuelto':
-        return 'bg-success text-white';
-      case 'cerrado':
-        return 'bg-secondary text-white';
-      default:
-        return 'bg-light text-dark';
-    }
-  };
+  // Estados de carga
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -329,28 +444,34 @@ export default function VisualizarInforme() {
           rel="stylesheet" 
         />
         
-        <Sidebar collapsed={sidebarCollapsed} />
-        <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-          <div className="container-fluid py-4">
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-              <div className="text-center">
-                <div className="spinner-border text-primary mb-3" role="status">
-                  <span className="visually-hidden">Cargando...</span>
+        <div className="d-flex">
+          <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+          <div className="flex-grow-1 min-vh-100">
+            <Header 
+              sidebarCollapsed={sidebarCollapsed}
+              setSidebarCollapsed={setSidebarCollapsed}
+              isDark={isDark}
+              toggleTheme={toggleTheme}
+            />
+            <div className="container-fluid py-4">
+              <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Cargando informe...</span>
                 </div>
-                <p className="text-muted">Cargando informe...</p>
               </div>
             </div>
           </div>
-      </div>
-      <Toaster 
-        position="top-right"
-        richColors
-        closeButton
-        duration={4000}
-      />  
-    </>
-  );
-}
+        </div>
+        
+        <Toaster 
+          position="top-right"
+          richColors
+          closeButton
+          duration={4000}
+        />
+      </>
+    );
+  }
 
   if (!report) {
     return (
@@ -364,25 +485,40 @@ export default function VisualizarInforme() {
           rel="stylesheet" 
         />
         
-        <Sidebar collapsed={sidebarCollapsed} />
-        <div className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-          <div className="container-fluid py-4">
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-              <div className="text-center">
-                <AlertCircle size={48} className="text-danger mb-3" />
-                <h5 className="text-danger mb-2">Informe no encontrado</h5>
-                <p className="text-muted mb-3">El informe que buscas no existe o no tienes permisos para verlo.</p>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => router.push('/reports')}
-                >
-                  <ArrowLeft size={16} className="me-2" />
-                  Volver a Informes
-                </button>
+        <div className="d-flex">
+          <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+          <div className="flex-grow-1 min-vh-100">
+            <Header 
+              sidebarCollapsed={sidebarCollapsed}
+              setSidebarCollapsed={setSidebarCollapsed}
+              isDark={isDark}
+              toggleTheme={toggleTheme}
+            />
+            <div className="container-fluid py-4">
+              <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+                <div className="text-center">
+                  <AlertCircle size={48} className="text-danger mb-3" />
+                  <h5 className="text-danger mb-2">Informe no encontrado</h5>
+                  <p className="text-muted mb-3">El informe que buscas no existe o no tienes permisos para verlo.</p>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => router.push('/reports')}
+                  >
+                    <ArrowLeft size={16} className="me-2" />
+                    Volver a Informes
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        
+        <Toaster 
+          position="top-right"
+          richColors
+          closeButton
+          duration={4000}
+        />
       </>
     );
   }
@@ -397,38 +533,127 @@ export default function VisualizarInforme() {
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" 
         rel="stylesheet" 
       />
-      <style>
-        {`
-          .sidebar-expanded {
-            width: 250px;
-          }
-          .sidebar-collapsed {
-            width: 70px;
-          }
-          .transition-width {
-            transition: width 0.3s ease-in-out;
-          }
-          .main-content {
-            margin-left: 250px;
-            transition: margin-left 0.3s ease-in-out;
-          }
-          .main-content.sidebar-collapsed {
-            margin-left: 70px;
-          }
-          .sidebar-collapsed .nav-link {
-            justify-content: center;
-            padding: 0.5rem;
-          }
-          .sidebar-collapsed .nav-link:hover {
-            background-color: #f8f9fa;
-            border-radius: 4px;
-          }
-        `}
-      </style>
       
+      <style jsx>{`
+        .card-hover {
+          transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .image-thumbnail {
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .image-thumbnail:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .image-gallery {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 1rem;
+        }
+        .image-card {
+          position: relative;
+          overflow: hidden;
+          border-radius: 12px;
+          transition: all 0.3s ease;
+        }
+        .image-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .image-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          display: flex;
+          align-items: flex-end;
+          padding: 1rem;
+        }
+        .image-card:hover .image-overlay {
+          opacity: 1;
+        }
+        .image-info {
+          color: white;
+          font-size: 0.875rem;
+          font-weight: 500;
+        }
+        .person-card {
+          transition: all 0.2s ease;
+        }
+        .person-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .file-upload-area {
+          border: 2px dashed #dee2e6;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+        }
+        .file-upload-area:hover {
+          border-color: #0d6efd;
+          background-color: rgba(13, 110, 253, 0.05);
+        }
+        .status-badge {
+          font-size: 0.875rem;
+          padding: 0.5rem 1rem;
+          border-radius: 20px;
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 576px) {
+          .container-fluid {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+          .card {
+            margin-bottom: 1rem;
+          }
+          .status-badge {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+          }
+          .btn {
+            font-size: 0.875rem;
+          }
+          .modal-dialog {
+            margin: 0.5rem;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .card-body {
+            padding: 1rem;
+          }
+          .image-thumbnail:hover {
+            transform: none;
+          }
+          .card-hover:hover {
+            transform: none;
+          }
+        }
+      `}</style>
+
       <div className="d-flex">
         <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-        <div className="flex-grow-1 min-vh-100">
+        <div 
+          className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}
+          style={{ 
+            marginLeft: sidebarCollapsed ? '70px' : '250px', 
+            transition: 'margin-left 0.3s ease',
+            backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' 
+          }}
+        >
           <Header 
             sidebarCollapsed={sidebarCollapsed}
             setSidebarCollapsed={setSidebarCollapsed}
@@ -436,599 +661,731 @@ export default function VisualizarInforme() {
             toggleTheme={toggleTheme}
           />
           
-        <div className="container-fluid py-4">
-          {/* Título de la página */}
-          <div className="row mb-4">
-            <div className="col-12">
-              <div className={isDark? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark": "p-4 rounded shadow-sm border-start border-4 border-primary"}>
-                <div className="d-flex align-items-center justify-content-between mb-2">
-                  <div className="d-flex align-items-center">
-                    <Eye size={28} className="me-2 text-primary" />
-                    <h1 className="h3 mb-0 text-primary">Visualizar Informe</h1>
+          <div className="container-fluid py-4">
+            {/* Header del informe */}
+            <div className="row mb-4">
+              <div className="col-12">
+                <div className={`p-4 rounded-3 shadow-sm border-start border-4 border-primary ${
+                  isDark ? 'bg-dark text-white' : 'bg-white'
+                }`}>
+                  <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                    <div className="d-flex align-items-center">
+                      <Eye size={28} className="me-3 text-primary" />
+                      <div>
+                        <h4 className="mb-1 fw-bold">Visualizar Informe</h4>
+                        <button 
+                          className="btn btn-link p-0 text-decoration-none"
+                          onClick={() => router.push('/reports')}
+                        >
+                          <ArrowLeft size={16} className="me-1" />
+                          Volver a Informes
+                        </button>
+                      </div>
+                    </div>
+                    <button 
+                      className="btn btn-outline-primary"
+                      onClick={handleEditClick}
+                    >
+                      <Edit size={16} className="me-2" />
+                      <span className="d-none d-sm-inline">Editar</span>
+                    </button>
                   </div>
-                  <button 
-                    className="btn btn-outline-primary"
-                    onClick={() => router.push('/reports')}
-                  >
-                    <ArrowLeft size={16} className="me-2" />
-                    Volver a Informes
-                  </button>
                 </div>
-                <nav aria-label="breadcrumb">
-                  <ol className="breadcrumb mb-0">
-                    <li className="breadcrumb-item">
-                      <a href="#" className="text-decoration-none">Inicio</a>
-                    </li>
-                    <li className="breadcrumb-item">
-                      <a href="/reports" className="text-decoration-none">Informes</a>
-                    </li>
-                    <li className="breadcrumb-item active" aria-current="page">
-                      {report.title}
-                    </li>
-                  </ol>
-                </nav>
               </div>
             </div>
-          </div>
-          
-          <div className="row">
-            <div className="col-12">
 
-              <div className="card border-0 shadow-sm">
-                <div className="card-body p-4">
-                  <div className="row g-4">
-                    <div className="col-lg-12">
-                      <div className="mb-4">
-                        <h6 className="fw-bold mb-3" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                          <FileType size={16} className="me-2" />
-                          Detalles del Informe
-                        </h6>
-                        <div className={isDark ? "p-4 rounded-3 border bg-dark": "p-4 rounded-3 border"} >
-                          <div className="row g-3">
-                            <div className="col-md-6">
-                              <div className="d-flex align-items-center mb-4 p-3 rounded-2" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}}>
-                                <MapPin size={18} className="me-2 text-primary" />
-                                <div>
-                                  <small className="d-block" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>Ubicación</small>
-                                  <strong>
-                                    {report.department?.name} - {report.locality?.name}
-                                  </strong>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="d-flex align-items-center mb-4 p-3 rounded-2" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}}>
-                                <Calendar size={18} className="me-2 text-primary" />
-                                <div>
-                                  <small className="d-block" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>Fecha de creación</small>
-                                  <strong>
-                                    {dayjs(report.created_at).format('DD/MM/YYYY HH:mm')}
-                                  </strong>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="d-flex align-items-center mb-4 p-3 rounded-2" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}}>
-                                <FileText size={18} className="me-2 text-primary" />
-                                <div>
-                                  <small className="d-block" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>Tipo de informe</small>
-                                  <span className={`badge ${getBadgeClass(report.type_report?.name)} px-2 py-1`}>
-                                    {report.type_report?.name}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="d-flex align-items-center justify-content-between mb-4 p-3 rounded-2" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}}>
-                                <div className="d-flex align-items-center">
-                                  <CheckCircle size={18} className="me-2 text-primary" />
-                                  <div>
-                                    <small className="d-block" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>Estado</small>
-                                    <span className={`badge ${getStatusBadgeClass(report.status)} px-2 py-1`}>
-                                      {report.status || 'Sin estado'}
-                                    </span>
-                                  </div>
-                                </div>
-                                <button 
-                                  className="btn btn-outline-primary btn-sm"
-                                  onClick={handleEditClick}
-                                  title="Editar estado y descripción"
-                                >
-                                  <Edit size={14} />
-                                </button>
-                              </div>
-                            </div>
+            <div className="row g-4">
+              {/* Columna principal */}
+              <div className="col-12 col-lg-8">
+                {/* Información básica del informe */}
+                <div className={`card shadow-sm mb-4 ${
+                  isDark ? 'bg-dark text-white border-secondary' : 'bg-white'
+                }`}>
+                  <div className="card-header border-0 pb-0">
+                    <h5 className="mb-0 fw-bold">
+                      <FileText size={20} className="me-2 text-primary" />
+                      {report.title}
+                    </h5>
+                  </div>
+                  <div className="card-body">
+                    <div className="row g-3">
+                      <div className="col-12 col-sm-6 col-md-6">
+                        <div className={`p-3 rounded-2 ${
+                          isDark ? 'bg-secondary bg-opacity-25' : 'bg-light'
+                        }`}>
+                          <div className="d-flex align-items-center mb-2">
+                            <MapPin size={16} className="me-2 text-primary" />
+                            <small className="text-muted fw-semibold">UBICACIÓN</small>
                           </div>
+                          <p className="mb-0 text-break">{report.department?.name} - {report.locality?.name}</p>
                         </div>
                       </div>
-
-                      {/* Título del Informe */}
-                      {report.title && (
-                        <div className="mb-4">
-                          <h6 className="fw-bold mb-3" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                            <FileText size={16} className="me-2" />
-                            Título del Informe
-                          </h6>
-                          <div className="p-4 rounded-3 border" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f8f9fa'}}>
-                            <h5 className="mb-0 fw-bold" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                              {report.title}
-                            </h5>
+                      <div className="col-12 col-sm-6 col-md-6">
+                        <div className={`p-3 rounded-2 ${
+                          isDark ? 'bg-secondary bg-opacity-25' : 'bg-light'
+                        }`}>
+                          <div className="d-flex align-items-center mb-2">
+                            <Calendar size={16} className="me-2 text-primary" />
+                            <small className="text-muted fw-semibold">FECHA</small>
                           </div>
-                        </div>
-                      )}
-
-                      {/* Reportado por */}
-                      <div className="mb-4">
-                        <h6 className="fw-bold mb-3" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                          <User size={16} className="me-2" />
-                          Reportado por
-                        </h6>
-                        <div className="p-4 rounded-3 border" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f8f9fa'}}>
-                          <div className="d-flex align-items-center">
-                            <User size={24} className="me-3 text-primary" />
-                            <div>
-                              <h6 className="mb-0 fw-bold" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                                {report.user?.name || 'Usuario'}
-                              </h6>
-                              <small style={{color: isDark ? '#a3a3a3' : '#6c757d'}}>
-                                {report.user?.email || 'Sin email'}
-                              </small>
-                            </div>
-                          </div>
+                          <p className="mb-0">{dayjs(report.created_at).format('DD/MM/YYYY HH:mm')}</p>
                         </div>
                       </div>
-
-                      {/* Contenido del Informe */}
-                      {report.content && (
-                        <div className="mb-4">
-                          <h6 className="fw-bold mb-3" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                            <FileText size={16} className="me-2" />
-                            Contenido del Informe
-                          </h6>
-                          <div className="p-4 rounded-3 border" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f8f9fa'}}>
-                            <div className="mb-0" style={{ whiteSpace: 'pre-wrap', color: isDark ? '#ffffff' : '#000000' }}>
-                              {report.content}
-                            </div>
+                      <div className="col-12 col-sm-6 col-md-6">
+                        <div className={`p-3 rounded-2 ${
+                          isDark ? 'bg-secondary bg-opacity-25' : 'bg-light'
+                        }`}>
+                          <div className="d-flex align-items-center mb-2">
+                            <FileText size={16} className="me-2 text-primary" />
+                            <small className="text-muted fw-semibold">TIPO</small>
                           </div>
+                          <span className={`badge ${getBadgeClass(report.type_report?.name)} status-badge`}>
+                            {report.type_report?.name}
+                          </span>
                         </div>
-                      )}
-
-                      {report.description && (
-                        <div className="mb-4">
-                          <h6 className="fw-bold mb-3" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                            <FileText size={16} className="me-2" />
-                            Descripción
-                          </h6>
-                          <div className="p-4 rounded-3 border" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f8f9fa'}}>
-                            <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>
-                              {report.description}
-                            </p>
+                      </div>
+                      <div className="col-12 col-sm-6 col-md-6">
+                        <div className={`p-3 rounded-2 ${
+                          isDark ? 'bg-secondary bg-opacity-25' : 'bg-light'
+                        }`}>
+                          <div className="d-flex align-items-center mb-2">
+                            <CheckCircle size={16} className="me-2 text-primary" />
+                            <small className="text-muted fw-semibold">ESTADO</small>
                           </div>
+                          <span className={`badge ${getStatusBadgeClass(report.status)} status-badge`}>
+                            {getStatusDisplayText(report.status)}
+                          </span>
                         </div>
-                      )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                      {/* Archivos e imágenes */}
+                {/* Contenido del informe */}
+                {report.content && (
+                  <div className={`card shadow-sm mb-4 ${
+                    isDark ? 'bg-dark text-white border-secondary' : 'bg-white'
+                  }`}>
+                    <div className="card-header border-0 pb-0">
+                      <h6 className="mb-0 fw-bold">
+                        <FileText size={16} className="me-2 text-primary" />
+                        Contenido del Informe
+                      </h6>
+                    </div>
+                    <div className="card-body">
+                      <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>
+                        {report.content}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Descripción adicional */}
+                {report.description && (
+                  <div className={`card shadow-sm mb-4 ${
+                    isDark ? 'bg-dark text-white border-secondary' : 'bg-white'
+                  }`}>
+                    <div className="card-header border-0 pb-0">
+                      <h6 className="mb-0 fw-bold">
+                        <FileText size={16} className="me-2 text-primary" />
+                        Observaciones
+                      </h6>
+                    </div>
+                    <div className="card-body">
+                      <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>
+                        {report.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Archivos e imágenes */}
+                <div className={`card shadow-sm mb-4 ${
+                  isDark ? 'bg-dark text-white border-secondary' : 'bg-white'
+                }`}>
+                  <div className="card-header border-0 pb-0">
+                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                        <h6 className="mb-0 fw-bold">
+                          <ImageIcon size={16} className="me-2 text-primary" />
+                          Archivos Adjuntos ({report.files ? report.files.length : 0})
+                        </h6>
+                        <button 
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => setShowFileUpload(!showFileUpload)}
+                        >
+                          <Plus size={16} className="me-1" />
+                          <span className="d-none d-sm-inline">Agregar</span>
+                          <span className="d-sm-none">+</span>
+                        </button>
+                      </div>
+                  </div>
+                  <div className="card-body">
+                    {/* Área de carga de archivos */}
+                    {showFileUpload && (
                       <div className="mb-4">
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                          <h6 className="fw-bold mb-0" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                            <ImageIcon size={16} className="me-2" />
-                            Archivos Adjuntos ({report.files ? report.files.length : 0})
-                          </h6>
-                          <button 
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() => setShowFileUpload(!showFileUpload)}
-                          >
-                            <Plus size={16} className="me-1" />
-                            Agregar Archivos
-                          </button>
+                        <div className={`file-upload-area p-4 text-center ${
+                          isDark ? 'border-secondary' : ''
+                        }`}>
+                          <Upload size={32} className="text-muted mb-2" />
+                          <h6 className="mb-2">Subir Archivos</h6>
+                          <input 
+                            type="file" 
+                            multiple 
+                            accept="image/*,.pdf,.doc,.docx,.txt"
+                            onChange={handleFileSelect}
+                            className="form-control mb-3"
+                          />
+                          <small className="text-muted">
+                            Formatos permitidos: Imágenes, PDF, DOC, DOCX, TXT (máx. 10MB)
+                          </small>
                         </div>
-
-                        {/* Sección de carga de archivos */}
-                        {showFileUpload && (
-                          <div className="card border-0 shadow-sm mb-3">
-                            <div className="card-header border-0">
-                              <h6 className="mb-0" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                                <Upload size={16} className="me-2" />
-                                Subir Nuevos Archivos
-                              </h6>
-                            </div>
-                            <div className="card-body">
-                              <div className="mb-3">
-                                <input
-                                  type="file"
-                                  className="form-control"
-                                  multiple
-                                  onChange={handleFileSelect}
-                                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt"
-                                />
-                                <small className="mt-1 d-block" style={{color: isDark ? '#a3a3a3' : '#6c757d'}}>
-                                  Formatos permitidos: JPG, PNG, GIF, PDF, DOC, DOCX, TXT (máximo 10MB por archivo)
-                                </small>
-                              </div>
-
-                              {selectedFiles.length > 0 && (
-                                <div className="mb-3">
-                                  <h6 className="small fw-bold mb-2" style={{color: isDark ? '#ffffff' : '#000000'}}>Archivos seleccionados:</h6>
-                                  <div className="list-group list-group-flush">
-                                    {selectedFiles.map((file, index) => (
-                                      <div key={index} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                                        <div className="d-flex align-items-center">
-                                          <File size={16} className="me-2 text-muted" />
-                                          <div>
-                                            <div className="fw-medium">{file.name}</div>
-                                            <small style={{color: isDark ? '#a3a3a3' : '#6c757d'}}>{formatFileSize(file.size)}</small>
-                                          </div>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          className="btn btn-sm btn-outline-danger"
-                                          onClick={() => removeFile(index)}
-                                          disabled={uploadingFiles}
-                                        >
-                                          <X size={14} />
-                                        </button>
-                                      </div>
-                                    ))}
+                        
+                        {selectedFiles.length > 0 && (
+                          <div className="mt-3">
+                            <h6 className="small fw-bold mb-2">Archivos seleccionados:</h6>
+                            <div className="list-group">
+                              {selectedFiles.map((file, index) => (
+                                <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                                  <div className="d-flex align-items-center">
+                                    <File size={16} className="me-2 text-muted" />
+                                    <div>
+                                      <div className="fw-medium">{file.name}</div>
+                                      <small className="text-muted">{formatFileSize(file.size)}</small>
+                                    </div>
                                   </div>
+                                  <button 
+                                    className="btn btn-outline-danger btn-sm"
+                                    onClick={() => removeFile(index)}
+                                    disabled={uploadingFiles}
+                                  >
+                                    <X size={14} />
+                                  </button>
                                 </div>
-                              )}
-
-                              <div className="d-flex gap-2">
-                                <button 
-                                  type="button" 
-                                  className="btn btn-secondary btn-sm"
-                                  onClick={handleCancelUpload}
-                                  disabled={uploadingFiles}
-                                >
-                                  <X size={14} className="me-1" />
-                                  Cancelar
-                                </button>
-                                <button 
-                                  type="button" 
-                                  className="btn btn-primary btn-sm"
-                                  onClick={handleUploadFiles}
-                                  disabled={uploadingFiles || selectedFiles.length === 0}
-                                >
-                                  {uploadingFiles ? (
-                                    <>
-                                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                      Subiendo...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload size={14} className="me-1" />
-                                      Subir Archivos
-                                    </>
-                                  )}
-                                </button>
-                              </div>
+                              ))}
                             </div>
                           </div>
                         )}
-
-                        {/* Lista de archivos existentes */}
-                        {report.files && report.files.length > 0 && (
-                          <div className="row g-4">
-                            {report.files.map((file, index) => {
-                              if (!file) {
-                                return null;
-                              }
-                              
-                              // Para archivos existentes sin filename, extraer del path
-                              let filename = file.filename;
-                              if (!filename && file.path) {
-                                // Extraer solo el nombre del archivo, sin la carpeta uploads/
-                                const pathParts = file.path.replace(/\\/g, '/').split('/');
-                                filename = pathParts[pathParts.length - 1];
-                              }
-                              if (!filename) {
-                                return null;
-                              }
-                              
-                              const fileUrl = fileUrls[filename];
-                              const fileType = getFileType(file.name);
-                              const isImage = fileType === 'image';
-                              
-                              return (
-                                <div key={index} className="col-md-4 col-lg-3">
-                                  <div className="card border-0 shadow-sm h-100" style={{transition: 'transform 0.3s ease, box-shadow 0.3s ease'}} onMouseEnter={(e) => {e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';}} onMouseLeave={(e) => {e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';}}>
-                                    {isImage ? (
-                                      <>
-                                        <div className="position-relative overflow-hidden" style={{ borderRadius: '0.375rem 0.375rem 0 0' }}>
-                                          {fileUrl ? (
-                                            <img 
-                                              src={fileUrl} 
-                                              alt={file.name || `Imagen ${index + 1}`}
-                                              className="card-img-top image-thumbnail"
-                                              style={{ 
-                                                height: '200px', 
-                                                objectFit: 'cover', 
-                                                cursor: 'pointer',
-                                                transition: 'transform 0.3s ease, filter 0.3s ease'
-                                              }}
-                                              onClick={() => setSelectedImage(fileUrl)}
-                                            onMouseEnter={(e) => {
-                                              e.target.style.transform = 'scale(1.05)';
-                                              e.target.style.filter = 'brightness(1.1)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.target.style.transform = 'scale(1)';
-                                                e.target.style.filter = 'brightness(1)';
-                                              }}
-                                            />
-                                          ) : (
-                                            <div 
-                                              className="d-flex align-items-center justify-content-center"
-                                              style={{ 
-                                                height: '200px', 
-                                                backgroundColor: '#f8f9fa',
-                                                color: '#6c757d'
-                                              }}
-                                            >
-                                              <div className="text-center">
-                                                <ImageIcon size={48} className="mb-2" />
-                                                <div>Cargando imagen...</div>
-                                              </div>
+                        
+                        <div className="d-flex gap-2 mt-3">
+                          <button 
+                            className="btn btn-secondary"
+                            onClick={() => {
+                              setShowFileUpload(false);
+                              setSelectedFiles([]);
+                            }}
+                            disabled={uploadingFiles}
+                          >
+                            <X size={14} className="me-1" />
+                            Cancelar
+                          </button>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={handleUploadFiles}
+                            disabled={uploadingFiles || selectedFiles.length === 0}
+                          >
+                            {uploadingFiles ? (
+                              <>
+                                <div className="spinner-border spinner-border-sm me-2" role="status">
+                                  <span className="visually-hidden">Subiendo...</span>
+                                </div>
+                                Subiendo...
+                              </>
+                            ) : (
+                              <>
+                                <Upload size={14} className="me-1" />
+                                Subir Archivos
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Separar imágenes de otros archivos */}
+                    {report.files && report.files.length > 0 && (
+                      <>
+                        {/* Galería de imágenes */}
+                        {(() => {
+                          const images = report.files.filter(file => {
+                            if (!file) return false;
+                            // Usar el campo type que contiene el MIME type
+                            return file.type && file.type.startsWith('image/');
+                          });
+                          
+                          if (images.length === 0) return null;
+                          
+                          return (
+                            <div className="mb-4">
+                              <h6 className="fw-bold mb-3">
+                                <ImageIcon size={16} className="me-2 text-primary" />
+                                Imágenes ({images.length})
+                              </h6>
+                              <div className="image-gallery">
+                                {images.map((file, index) => {
+                                  const fileUrl = fileUrls[file.id];
+                                  // Usar el nombre original del archivo para mostrar al usuario
+                                  const displayName = file.name || file.filename || 'Archivo sin nombre';
+                                  
+                                  return (
+                                    <div key={index} className="image-card">
+                                      {fileUrl ? (
+                                        <>
+                                          <img 
+                            src={fileUrl}
+                            alt={displayName || `Imagen ${index + 1}`}
+                            className="image-thumbnail w-100"
+                            style={{
+                              height: '200px',
+                              objectFit: 'cover',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => setSelectedImage(fileUrl)}
+                          />
+                                          <div className="image-overlay">
+                                            <div className="image-info">
+                                              <div className="text-truncate">{displayName}</div>
+                                              {file.file_size && (
+                                                <small className="opacity-75">
+                                                  {formatFileSize(file.file_size)}
+                                                </small>
+                                              )}
                                             </div>
-                                          )}
-                                          {/* Overlay con botones */}
-                                          <div 
-                                            className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                                            style={{ 
-                                              background: 'rgba(0,0,0,0.4)', 
-                                              opacity: 0,
-                                              transition: 'opacity 0.3s ease',
-                                              cursor: 'pointer'
-                                            }}
-                                            onClick={() => fileUrl && setSelectedImage(fileUrl)}
-                                            onMouseEnter={(e) => e.target.style.opacity = 1}
-                                            onMouseLeave={(e) => e.target.style.opacity = 0}
-                                          >
-                                            <button 
-                                              className="btn btn-light rounded-circle me-2"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedImage(fileUrl);
-                                              }}
-                                              title="Ver imagen completa"
-                                            >
-                                              <Eye size={16} />
-                                            </button>
-                                            <a 
-                                              href={fileUrl}
-                                              download={file.file_name}
-                                              className="btn btn-light rounded-circle me-2"
-                                              onClick={(e) => e.stopPropagation()}
-                                              title="Descargar imagen"
-                                            >
-                                              <Download size={16} />
-                                            </a>
-                                            <button 
-                                              className="btn btn-danger rounded-circle"
-                                              onClick={(e) => {
-                                                 e.stopPropagation();
-                                                 handleDeleteFile(file.id, file.name);
-                                               }}
-                                              title="Eliminar archivo"
-                                            >
-                                              <X size={16} />
-                                            </button>
                                           </div>
+                                          <div className="position-absolute top-0 end-0 p-2">
+                                            <div className="d-flex gap-1">
+                                              <a 
+                                                href={fileUrl}
+                                                download={displayName}
+                                                className="btn btn-primary btn-sm"
+                                                onClick={(e) => e.stopPropagation()}
+                                                title="Descargar imagen"
+                                                style={{ opacity: 0.9 }}
+                                              >
+                                                <Download size={14} />
+                                              </a>
+                                              <button 
+                                                className="btn btn-danger btn-sm"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDeleteFile(file.id, displayName);
+                                                }}
+                                                title="Eliminar imagen"
+                                                style={{ opacity: 0.9 }}
+                                              >
+                                                <Trash2 size={14} />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div className="d-flex justify-content-center align-items-center bg-light" style={{ height: '200px' }}>
+                                          <ImageIcon size={48} className="text-muted" />
                                         </div>
-                                        <div className="card-body p-3">
-                                          <small className="d-block text-truncate" style={{color: isDark ? '#d4d4d4' : '#6c757d'}} title={file.file_name}>
-                                            {file.file_name || `Imagen ${index + 1}`}
-                                          </small>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        
+                        {/* Otros archivos */}
+                        {(() => {
+                          const otherFiles = report.files.filter(file => {
+                            if (!file) return false;
+                            // Usar el campo type que contiene el MIME type
+                            return file.type && !file.type.startsWith('image/');
+                          });
+                          
+                          if (otherFiles.length === 0) return null;
+                          
+                          return (
+                            <div>
+                              <h6 className="fw-bold mb-3">
+                                <File size={16} className="me-2 text-primary" />
+                                Documentos ({otherFiles.length})
+                              </h6>
+                              <div className="row g-3">
+                                {otherFiles.map((file, index) => {
+                                  // Usar el nombre original del archivo para mostrar al usuario
+                                  const displayName = file.name || file.filename || 'Archivo sin nombre';
+                                  
+                                  const fileUrl = fileUrls[file.id];
+                                  
+                                  return (
+                                    <div key={index} className="col-12 col-sm-6 col-md-6 col-lg-4">
+                                      <div className={`card h-100 card-hover ${
+                                        isDark ? 'bg-secondary bg-opacity-25 border-secondary' : 'border-0 shadow-sm'
+                                      }`}>
+                                        <div className="card-body text-center">
+                          <div className="mb-3">
+                            {getFileIcon(file.type, 48)}
+                          </div>
+                                          <h6 className="card-title text-truncate" title={displayName}>
+                                            {displayName}
+                                          </h6>
                                           {file.file_size && (
-                                            <small style={{color: isDark ? '#a3a3a3' : '#6c757d'}}>
+                                            <small className="text-muted d-block mb-3">
                                               {formatFileSize(file.file_size)}
                                             </small>
                                           )}
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <div className="card-body text-center d-flex flex-column justify-content-center p-4">
-                                        <Download size={32} className="text-muted mb-2" />
-                                        <small className="d-block text-truncate mb-2" style={{color: isDark ? '#d4d4d4' : '#6c757d'}} title={file.file_name}>
-                                          {file.file_name || `Archivo ${index + 1}`}
-                                        </small>
-                                        {file.file_size && (
-                                          <small className="mb-2" style={{color: isDark ? '#a3a3a3' : '#6c757d'}}>
-                                            {formatFileSize(file.file_size)}
-                                          </small>
-                                        )}
-                                        <div className="d-flex gap-2">
-                                          <a 
-                                            href={fileUrl} 
-                                            download={file.file_name}
-                                            className="btn btn-sm btn-outline-primary"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                          >
-                                            <Download size={14} className="me-1" />
-                                            Descargar
-                                          </a>
-                                          <button 
-                                             className="btn btn-sm btn-outline-danger"
-                                             onClick={() => handleDeleteFile(file.id, file.name)}
-                                             title="Eliminar archivo"
-                                           >
-                                            <X size={14} />
-                                          </button>
+                                          <div className="d-flex gap-2 justify-content-center">
+                                            {fileUrl && (
+                                              <a 
+                                                href={fileUrl}
+                                                download={displayName}
+                                                className="btn btn-outline-primary btn-sm"
+                                              >
+                                                <Download size={14} className="me-1" />
+                                                Descargar
+                                              </a>
+                                            )}
+                                            <button 
+                                              className="btn btn-outline-danger btn-sm"
+                                              onClick={() => handleDeleteFile(file.id, displayName)}
+                                            >
+                                              <Trash2 size={14} className="me-1" />
+                                              Eliminar
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
+                    )}
+                    
+                    {(!report.files || report.files.length === 0) && (
+                      <div className="text-center py-4">
+                        <ImageIcon size={48} className="text-muted mb-3" />
+                        <p className="text-muted mb-0">No hay archivos adjuntos</p>
                       </div>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-                      {/* Personas involucradas */}
-                      {report.persons && report.persons.length > 0 && (
-                        <div className="mb-4">
-                          <h6 className="fw-bold mb-3" style={{color: isDark ? '#ffffff' : '#000000'}}>
-                            <Users size={16} className="me-2" />
-                            Personas Involucradas ({report.persons.length})
-                          </h6>
-                          <div className="row g-3">
-                            {report.persons.map((person, index) => (
-                              <div key={index} className="col-md-6 col-lg-4">
-                                <div className="p-3 rounded-3 border d-flex align-items-center shadow-sm" style={{backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', transition: 'transform 0.2s ease, box-shadow 0.2s ease'}} onMouseEnter={(e) => {e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';}} onMouseLeave={(e) => {e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';}}>
-                                  <User size={16} className="me-2 text-primary" />
-                                  <div>
-                                    <div className="fw-semibold">{person.name}</div>
-                                    {person.email && (
-                                      <small style={{color: isDark ? '#a3a3a3' : '#6c757d'}}>{person.email}</small>
-                                    )}
-                                  </div>
+              {/* Columna lateral */}
+              <div className="col-12 col-lg-4">
+                {/* Reportado por */}
+                <div className={`card shadow-sm mb-4 ${
+                  isDark ? 'bg-dark text-white border-secondary' : 'bg-white'
+                }`}>
+                  <div className="card-header border-0 pb-0">
+                    <h6 className="mb-0 fw-bold">
+                      <User size={16} className="me-2 text-primary" />
+                      Reportado por
+                    </h6>
+                  </div>
+                  <div className="card-body">
+                    <div className="d-flex align-items-center">
+                      <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 ${
+                        isDark ? 'bg-primary bg-opacity-25' : 'bg-primary bg-opacity-10'
+                      }`} style={{ width: '48px', height: '48px' }}>
+                        <User size={24} className="text-primary" />
+                      </div>
+                      <div>
+                        <h6 className="mb-0 fw-semibold">{report.user?.name || 'Usuario'}</h6>
+                        <small className="text-muted">{report.user?.email || 'Sin email'}</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Personas vinculadas */}
+                <div className={`card shadow-sm mb-4 ${
+                  isDark ? 'bg-dark text-white border-secondary' : 'bg-white'
+                }`}>
+                  <div className="card-header border-0 pb-0">
+                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                        <h6 className="mb-0 fw-bold">
+                          <Users size={16} className="me-2 text-primary" />
+                          <span className="d-none d-sm-inline">Personas Involucradas</span>
+                          <span className="d-sm-none">Personas</span>
+                          <span className="ms-1">({reportPersons.length})</span>
+                        </h6>
+                        <button 
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => setShowPersonModal(true)}
+                        >
+                          <Plus size={16} className="me-1" />
+                          <span className="d-none d-sm-inline">Agregar</span>
+                          <span className="d-sm-none">+</span>
+                        </button>
+                      </div>
+                  </div>
+                  <div className="card-body">
+                    {reportPersons.length > 0 ? (
+                      <div className="d-flex flex-column gap-2">
+                        {reportPersons.map((person, index) => (
+                          <div key={index} className={`p-3 rounded-2 person-card d-flex justify-content-between align-items-center ${
+                            isDark ? 'bg-secondary bg-opacity-25' : 'bg-light'
+                          }`}>
+                            <div className="d-flex align-items-center flex-grow-1">
+                              <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 ${
+                                isDark ? 'bg-primary bg-opacity-25' : 'bg-primary bg-opacity-10'
+                              }`} style={{ width: '40px', height: '40px' }}>
+                                <User size={18} className="text-primary" />
+                              </div>
+                              <div className="flex-grow-1">
+                                <div className="fw-semibold">{person.name} {person.last_name}</div>
+                                <div className="d-flex flex-column flex-sm-row gap-1">
+                                  <small className="text-muted">DNI: {person.dni}</small>
+                                  {person.locality && (
+                                    <small className="text-muted d-none d-sm-inline">• {person.locality}</small>
+                                  )}
                                 </div>
                               </div>
-                            ))}
+                            </div>
+                            <div className="d-flex gap-1">
+                              <button 
+                                className="btn btn-outline-info btn-sm"
+                                onClick={() => {
+                                  setSelectedPersonDetails(person);
+                                  setShowPersonDetailsModal(true);
+                                }}
+                                title="Ver detalles"
+                              >
+                                <Info size={14} />
+                              </button>
+                              <button 
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => handleRemovePerson(person.id)}
+                                title="Desvincular persona"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-3">
+                        <Users size={32} className="text-muted mb-2" />
+                        <p className="text-muted mb-0 small">No hay personas vinculadas</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
 
-        {/* Modal para editar estado y descripción */}
-        {showEditModal && (
-          <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">
-                    <Edit size={20} className="me-2" />
-                    Editar Informe
-                  </h5>
+      {/* Modal para editar estado y descripción */}
+      {showEditModal && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-scrollable">
+            <div className={`modal-content ${
+              isDark ? 'bg-dark text-white border-secondary' : ''
+            }`}>
+              <div className="modal-header border-0">
+                <h5 className="modal-title">
+                  <Edit size={20} className="me-2" />
+                  Editar Informe
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={handleEditCancel}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <form onSubmit={handleEditSubmit}>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label htmlFor="status" className="form-label fw-semibold">Estado</label>
+                    <select 
+                      id="status"
+                      className={`form-select ${
+                        isDark ? 'bg-dark text-white border-secondary' : ''
+                      }`}
+                      value={editData.status}
+                      onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <option value="">Seleccionar estado</option>
+                      <option value="pending">Pendiente</option>
+                      <option value="complete">Completado</option>
+                      <option value="urgent">Urgente</option>
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label htmlFor="description" className="form-label fw-semibold">Observaciones</label>
+                    <textarea 
+                      id="description"
+                      className={`form-control ${
+                        isDark ? 'bg-dark text-white border-secondary' : ''
+                      }`}
+                      rows="4"
+                      value={editData.description}
+                      onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Agregar observaciones adicionales..."
+                    ></textarea>
+                  </div>
+                </div>
+                <div className="modal-footer border-0">
                   <button 
                     type="button" 
-                    className="btn-close" 
+                    className="btn btn-secondary"
                     onClick={handleEditCancel}
-                  ></button>
-                </div>
-                <form onSubmit={handleEditSubmit}>
-                  <div className="modal-body">
-                    <div className="mb-3">
-                      <label htmlFor="status" className="form-label">Estado</label>
-                      <select 
-                        className="form-select"
-                        id="status"
-                        value={editData.status}
-                        onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
-                        required
-                      >
-                        <option value="">Seleccionar estado</option>
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="En proceso">En proceso</option>
-                        <option value="Resuelto">Resuelto</option>
-                        <option value="Cerrado">Cerrado</option>
-                      </select>
-                    </div>
-                    <div className="mb-3">
-                      <label htmlFor="description" className="form-label">Descripción</label>
-                      <textarea 
-                        className="form-control"
-                        id="description"
-                        rows="4"
-                        value={editData.description}
-                        onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Ingrese una descripción del informe..."
-                      ></textarea>
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary"
-                      onClick={handleEditCancel}
-                      disabled={updating}
-                    >
-                      <X size={16} className="me-1" />
-                      Cancelar
-                    </button>
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary"
-                      disabled={updating}
-                    >
-                      {updating ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Actualizando...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle size={16} className="me-1" />
-                          Actualizar
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal para ver imagen ampliada */}
-        {selectedImage && (
-          <div 
-            className="modal fade show d-block" 
-            style={{ backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 1055 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setSelectedImage(null);
-              }
-            }}
-          >
-            <div className="modal-dialog modal-xl modal-dialog-centered">
-              <div className="modal-content bg-transparent border-0">
-                <div className="modal-body p-0 text-center position-relative">
-                  {/* Botón de cerrar */}
-                  <button 
-                    className="btn btn-light position-absolute top-0 end-0 m-3"
-                    style={{ zIndex: 1060, borderRadius: '50%', width: '40px', height: '40px' }}
-                    onClick={() => setSelectedImage(null)}
-                    title="Cerrar"
+                    disabled={updating}
                   >
-                    <X size={20} />
+                    <X size={16} className="me-1" />
+                    Cancelar
                   </button>
-                  
-                  {/* Imagen principal */}
-                  <img 
-                    src={selectedImage} 
-                    alt="Imagen ampliada"
-                    className="img-fluid rounded shadow-lg"
-                    style={{ 
-                      maxHeight: '90vh', 
-                      maxWidth: '90vw',
-                      objectFit: 'contain',
-                      cursor: 'zoom-in'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  
-                  {/* Información de la imagen */}
-                  <div className="position-absolute bottom-0 start-50 translate-middle-x mb-3">
-                    <div className="bg-dark bg-opacity-75 text-white px-3 py-2 rounded">
-                      <small>Haz clic fuera de la imagen para cerrar</small>
-                    </div>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={updating}
+                  >
+                    {updating ? (
+                      <>
+                        <div className="spinner-border spinner-border-sm me-2" role="status">
+                          <span className="visually-hidden">Actualizando...</span>
+                        </div>
+                        Actualizando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={16} className="me-1" />
+                        Guardar Cambios
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para agregar personas */}
+      <AddPersonModal 
+        isOpen={showPersonModal}
+        onClose={() => setShowPersonModal(false)}
+        onPersonAdded={handlePersonAdded}
+        isDark={isDark}
+      />
+
+      {/* Modal para ver imagen ampliada */}
+      {selectedImage && (
+        <div 
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 1055 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedImage(null);
+            }
+          }}
+        >
+          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div className="position-relative">
+              {/* Botón de cerrar */}
+              <button 
+                className="btn btn-light position-absolute top-0 end-0 m-3"
+                style={{ zIndex: 1060, borderRadius: '50%', width: '40px', height: '40px' }}
+                onClick={() => setSelectedImage(null)}
+              >
+                <X size={20} />
+              </button>
+              
+              {/* Imagen principal */}
+              <img 
+                src={selectedImage}
+                alt="Imagen ampliada"
+                className="img-fluid rounded"
+                style={{
+                  maxHeight: '90vh',
+                  maxWidth: '100%',
+                  objectFit: 'contain'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de detalles de persona */}
+      {showPersonDetailsModal && selectedPersonDetails && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className={`modal-content ${isDark ? 'bg-dark text-light' : ''}`}>
+              <div className="modal-header">
+                <h5 className="modal-title d-flex align-items-center">
+                  <User className="me-2" size={20} />
+                  Detalles de la Persona
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowPersonDetailsModal(false)}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Nombre</label>
+                    <p className="form-control-plaintext">{selectedPersonDetails.name}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Apellido</label>
+                    <p className="form-control-plaintext">{selectedPersonDetails.last_name}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">DNI</label>
+                    <p className="form-control-plaintext">{selectedPersonDetails.dni}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Teléfono</label>
+                    <p className="form-control-plaintext">{selectedPersonDetails.phone || 'No especificado'}</p>
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label fw-semibold">Email</label>
+                    <p className="form-control-plaintext">{selectedPersonDetails.email || 'No especificado'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Localidad</label>
+                    <p className="form-control-plaintext">{selectedPersonDetails.locality || 'No especificada'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Provincia</label>
+                    <p className="form-control-plaintext">{selectedPersonDetails.province || 'No especificada'}</p>
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label fw-semibold">Dirección</label>
+                    <p className="form-control-plaintext">{selectedPersonDetails.address || 'No especificada'}</p>
                   </div>
                 </div>
               </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowPersonDetailsModal(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
+      
+      <Toaster 
+        position="top-right"
+        richColors
+        closeButton
+        duration={4000}
+      />
     </>
   );
 }

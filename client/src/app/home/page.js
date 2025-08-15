@@ -197,9 +197,13 @@ useEffect(() => {
       <div className="d-flex">
         <Sidebar 
           isCollapsed={sidebarCollapsed} 
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          isDark={true}
         />
-        <div className="flex-grow-1 min-vh-100">
+        <div 
+          className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}
+          style={{ marginLeft: sidebarCollapsed ? '70px' : '250px', transition: 'margin-left 0.3s ease' }}
+        >
           <Header 
             sidebarCollapsed={sidebarCollapsed}
             setSidebarCollapsed={setSidebarCollapsed}
