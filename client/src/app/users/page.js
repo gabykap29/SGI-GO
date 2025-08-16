@@ -20,7 +20,14 @@ export default function GestionUsuarios() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+  const [isMobile, setIsMobile] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     last_name: '',
@@ -77,13 +84,26 @@ export default function GestionUsuarios() {
 
   useEffect(() => {
     const handleResize = () => {
-      setSidebarCollapsed(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarCollapsed(true);
+      }
     };
-
+    
+    // Ejecutar inmediatamente al cargar
     handleResize();
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Guardar estado del sidebar en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -223,6 +243,7 @@ export default function GestionUsuarios() {
               setSidebarCollapsed={setSidebarCollapsed}
               isDark={isDark}
               toggleTheme={toggleTheme}
+              isMobile={isMobile}
             />
             
             <div className={`container-fluid py-4 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}>
@@ -364,7 +385,10 @@ export default function GestionUsuarios() {
         <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} isDark={true} />
         <div 
           className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}
-          style={{ marginLeft: sidebarCollapsed ? '70px' : '250px', transition: 'margin-left 0.3s ease' }}
+          style={{ 
+            marginLeft: isMobile ? '0' : (sidebarCollapsed ? '70px' : '250px'), 
+            transition: 'margin-left 0.3s ease' 
+          }}
         >
           <Header 
             sidebarCollapsed={sidebarCollapsed}

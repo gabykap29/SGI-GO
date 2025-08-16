@@ -1,11 +1,36 @@
+import { useState, useEffect } from 'react';
 import {
     FileText,
     TrendingUp,
     Users,
-    Filter
+    Filter,
+    X
   } from 'lucide-react';
   
   export function Sidebar({ isCollapsed, onToggle, isDark = true }) {
+    const [isMobile, setIsMobile] = useState(false);
+    const [userRole, setUserRole] = useState(null);
+
+    useEffect(() => {
+      const checkMobile = () => {
+        setIsMobile(window.innerWidth < 768);
+      };
+      
+      if (typeof window !== 'undefined') {
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        
+        // Get user role from localStorage
+        const role = localStorage.getItem('userRole');
+        setUserRole(role);
+        
+        return () => window.removeEventListener('resize', checkMobile);
+      }
+    }, []);
+
+    // Check if user is admin or moderator
+    const canViewUsers = userRole === 'admin' || userRole === 'moderator';
+
 return (
   <>
     <style jsx>{`
@@ -21,6 +46,24 @@ return (
         overflow-y: auto;
         border-right: 1px solid #444;
         box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+      }
+      
+      .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+      
+      .sidebar-overlay.show {
+        opacity: 1;
+        visibility: visible;
       }
         
         .sidebar-expanded {
@@ -72,10 +115,12 @@ return (
           color: #ffffff !important;
         }
         
-        @media (max-width: 768px) {
+        @media (max-width: 767.98px) {
           .sidebar {
             transform: translateX(-100%);
             transition: transform 0.3s ease;
+            width: 280px !important;
+            z-index: 9998;
           }
           
           .sidebar.show {
@@ -84,17 +129,28 @@ return (
           
           .sidebar-expanded,
           .sidebar-collapsed {
-            width: 250px;
+            width: 280px !important;
           }
+          
         }
       `}</style>
+      
+      {/* Overlay para móviles */}
+      {isMobile && !isCollapsed && (
+        <div 
+          className="sidebar-overlay show"
+          onClick={onToggle}
+        />
+      )}
+      
+
       
       <div 
          className={`sidebar ${
            isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'
          } ${!isCollapsed ? 'show' : ''}`}
        >
-        <div className="p-3 d-flex justify-content-between align-items-center text-white">
+        <div className={`p-3 d-flex justify-content-between align-items-center text-white ${isMobile ? 'pt-5' : ''}`}>
           {!isCollapsed && (
             <h5 className="fw-bold mb-0 text-white">
               <FileText className="me-2 text-info" size={24} />
@@ -131,11 +187,19 @@ return (
             </a>
           </li>
           <li className="nav-item mb-2">
-            <a href="/users" className="nav-link text-white d-flex align-items-center sidebar-link" title="Usuarios">
-              <Users className="text-danger flex-shrink-0" size={20} />
-              {!isCollapsed && <span className="ms-2">Usuarios</span>}
+            <a href="/persons/search" className="nav-link text-white d-flex align-items-center sidebar-link" title="Buscar Personas">
+              <Users className="text-white flex-shrink-0" size={20} />
+              {!isCollapsed && <span className="ms-2">Buscar Personas</span>}
             </a>
           </li>
+          {canViewUsers && (
+            <li className="nav-item mb-2">
+              <a href="/users" className="nav-link text-white d-flex align-items-center sidebar-link" title="Usuarios">
+                <Users className="text-danger flex-shrink-0" size={20} />
+                {!isCollapsed && <span className="ms-2">Usuarios</span>}
+              </a>
+            </li>
+          )}
           <li className="nav-item mt-4">
             <button className="btn btn-outline-light w-100 d-flex align-items-center justify-content-center logout-btn" title="Cerrar sesión">
               {!isCollapsed ? 'Cerrar sesión' : '↩'}

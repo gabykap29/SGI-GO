@@ -20,7 +20,14 @@ export default function EditarInforme({ params }) {
   const router = useRouter();
   const reportId = params?.id;
   
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+  const [isMobile, setIsMobile] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [departments, setDepartments] = useState([]);
   const [localities, setLocalities] = useState([]);
@@ -125,7 +132,9 @@ export default function EditarInforme({ params }) {
     const handleResize = () => {
       const width = window.innerWidth;
       setWindowWidth(width);
-      if (width < 768) {
+      const mobile = width < 768;
+      setIsMobile(mobile);
+      if (mobile) {
         setSidebarCollapsed(true);
       }
     };
@@ -136,6 +145,13 @@ export default function EditarInforme({ params }) {
       return () => window.removeEventListener('resize', handleResize);
     }
   }, []);
+
+  // Guardar estado del sidebar en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -456,6 +472,7 @@ export default function EditarInforme({ params }) {
             setSidebarCollapsed={setSidebarCollapsed}
             isDark={isDark}
             toggleTheme={toggleTheme}
+            isMobile={isMobile}
           />
           
           <div className="container-fluid py-4 min-vh-100">
@@ -723,7 +740,7 @@ export default function EditarInforme({ params }) {
                                 <div className="text-center py-3 text-muted">
                                   <Users size={32} className="mb-2 opacity-50" />
                                   <p className="mb-0">No hay personas agregadas al informe</p>
-                                  <small>Haga clic en "Agregar Persona" para comenzar</small>
+                                  <small>Haga clic en &quot;Agregar Persona&quot; para comenzar</small>
                                 </div>
                               ) : (
                                 <div className="row g-2">

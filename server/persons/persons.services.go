@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sgi-go/database"
 	"sgi-go/entities"
+
+	"gorm.io/gorm"
 )
 
 func AddPerson(person *entities.Person) (*entities.Person, error) {
@@ -51,4 +53,27 @@ func DeletePerson(id string) error {
 		return result.Error
 	}
 	return nil
+}
+
+// GetReportsByPersonId obtiene todos los reportes vinculados a una persona
+func GetReportsByPersonId(personId string) ([]entities.Report, error) {
+	var reports []entities.Report
+	
+	// Buscar reportes donde la persona esté vinculada a través de la tabla intermedia
+	result := database.DB.
+		Preload("Department").
+		Preload("Locality").
+		Preload("TypeReport").
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "username", "name", "last_name")
+		}).
+		Joins("JOIN person_report ON person_report.report_id = reports.id").
+		Where("person_report.person_id = ?", personId).
+		Find(&reports)
+	
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	
+	return reports, nil
 }

@@ -12,28 +12,44 @@ export default function DashboardInicio() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [informes, setInformes] = useState([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+  const [isMobile, setIsMobile] = useState(false);
   const { theme, toggleTheme, isDark } = useTheme();
   const [stats, setStats] = useState({
-    Urgente: 0,
-    Completado: 0,
-    Pendiente: 0,
+    urgent: 0,
+    complete: 0,
+    pending: 0,
   });
 
   // Auto-colapsar en pantallas pequeñas
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 992) {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
         setSidebarCollapsed(true);
       }
     };
-    // Solo ejecutar en el cliente
-    if (typeof window !== 'undefined') {
-      handleResize();
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
+    
+    // Ejecutar inmediatamente al cargar
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Guardar estado del sidebar en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
 
   // Datos de ejemplo para los últimos informes
 useEffect(() => {
@@ -41,66 +57,17 @@ useEffect(() => {
     const response = await getReports();
     setInformes(response.data);
     const newStats = response.data.reduce((acc, informe) => {
-      const status = informe.status || "Pendiente";
+      const status = informe.status;
+      console.log(status);
+      
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {});
+
     setStats(newStats);
   };
   handleReports();
 }, []);
-
-  const getBadgeClass = (tipo) => {
-    switch (tipo) {
-      case 'Politica':
-        return 'bg-danger';
-      case 'Institucional':
-        return 'bg-primary';
-      case 'Educación':
-        return 'bg-info';
-      case 'Religioso':
-        return 'bg-warning';
-      case 'Proselitismo':
-        return 'bg-danger text-white';
-      case 'Salud':
-        return 'bg-success';
-      case 'Seguridad':
-        return 'bg-dark text-white';
-      case 'Eventos Climaticos':
-        return 'bg-warning';
-      case 'Hídricos':
-        return 'bg-primary-subtle';
-      case 'Económicos':
-        return 'bg-secondary';
-      case 'Ambientales':
-        return 'bg-success';
-      case 'Sociales':
-        return 'bg-info';
-      case 'Turismo':
-        return 'bg-pink text-white';
-      case 'Deportivos':
-        return 'bg-indigo text-white';
-      case 'OTROS':
-        return 'bg-secondary';
-      default:
-        return 'bg-light';
-    }
-  };
-  
-  const getEstadoBadge = (estado) => {
-    switch (estado) {
-      case 'Completado':
-        return 'bg-success';
-      case 'En Proceso':
-        return 'bg-warning';
-      case 'Pendiente':
-        return 'bg-secondary';
-      case 'Urgente':
-        return 'bg-danger';
-      default:
-        return 'bg-light';
-    }
-  };
 
   const formatFecha = (fecha) => {
     return new Date(fecha).toLocaleDateString('es-AR', {
@@ -202,13 +169,17 @@ useEffect(() => {
         />
         <div 
           className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}
-          style={{ marginLeft: sidebarCollapsed ? '70px' : '250px', transition: 'margin-left 0.3s ease' }}
+          style={{ 
+            marginLeft: isMobile ? '0' : (sidebarCollapsed ? '70px' : '250px'), 
+            transition: 'margin-left 0.3s ease' 
+          }}
         >
           <Header 
             sidebarCollapsed={sidebarCollapsed}
             setSidebarCollapsed={setSidebarCollapsed}
             isDark={isDark}
             toggleTheme={toggleTheme}
+            isMobile={isMobile}
           />
           
           <div className={isDark? "container-fluid py-4 bg-black" : "container-fluid py-4 bg-light"}>
@@ -251,7 +222,7 @@ useEffect(() => {
                       </div>
                       <div className="flex-grow-1 ms-3">
                         <div className="fw-bold fs-4" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
-                          {stats.Urgente || 0}
+                          {stats.urgent || 0}
                         </div>
                         <div className="small" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
                           Urgentes
@@ -270,7 +241,7 @@ useEffect(() => {
                       </div>
                       <div className="flex-grow-1 ms-3">
                         <div className="fw-bold fs-4" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
-                          {stats.Completado || 0}
+                          {stats.complete || 0}
                         </div>
                         <div className="small" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
                           Completados
@@ -289,7 +260,7 @@ useEffect(() => {
                       </div>
                       <div className="flex-grow-1 ms-3">
                         <div className="fw-bold fs-4" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
-                          {stats.Pendiente || 0}
+                          {stats.pending || 0}
                         </div>
                         <div className="small" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
                           Pendientes
@@ -341,7 +312,7 @@ useEffect(() => {
                                 {informe.locality.name}
                               </td>
                               <td className="py-3">
-                                <span className={`badge rounded-pill ${getBadgeClass(informe.type_report.name)} text-white px-3`}>
+                                <span className={`badge rounded-pill ${(informe.type_report.name)} text-white px-3`}>
                                   {informe.type_report.name}
                                 </span>
                               </td>
@@ -352,8 +323,8 @@ useEffect(() => {
                                 {informe.title}
                               </td>
                               <td className="py-3">
-                                <span className={`badge rounded-pill ${getEstadoBadge(informe.status)} text-white px-3`}>
-                                  {informe.status || "Pendiente"}
+                                <span className={`badge rounded-pill ${(informe.status === "pending") ? 'badge-warning' : (informe.status === "complete") ? 'badge-success' : 'badge-danger'} text-white px-3`}>
+                                  {informe.status === "pending" ? "Pendiente" : informe.status === "complete"? "Completado" : "Urgente"}
                                 </span>
                               </td>
                               <td className="py-3 text-center">

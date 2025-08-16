@@ -62,4 +62,14 @@ func PersonRouter(r *gin.RouterGroup) {
 		}
 		c.JSON(200, gin.H{"message": "Person deleted"})
 	})
+
+	r.GET("/persons/:id/reports", func(c *gin.Context) {
+		id := c.Params.ByName("id")
+		reports, err := GetReportsByPersonId(id)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, reports)
+	})
 }

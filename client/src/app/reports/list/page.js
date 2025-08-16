@@ -8,8 +8,9 @@ import { getReportsWithFilters, getActiveFiltersDescription } from '../../../../
 import { getDepartments } from '../../../../hooks/handleDepartments';
 import { getLocalities } from '../../../../hooks/handleLocalities';
 import { getTypeReports } from '../../../../hooks/handleTypeReports';
+import { DeleteReport } from '../../../../hooks/handleReports';
 import useTheme from '../../../../hooks/useTheme';
-import { handleError } from '../../../../hooks/toaster';
+import { handleError, handleSuccess } from '../../../../hooks/toaster';
 import { useAuth } from '../../../../hooks/useAuth';
 import { Users, Plus, Edit, Trash2, Search, Eye, EyeOff } from 'lucide-react';
 
@@ -17,7 +18,14 @@ export default function ReportsListPage() {
     const { isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
     const { theme, toggleTheme, isDark } = useTheme();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+         if (typeof window !== 'undefined') {
+             const saved = localStorage.getItem('sidebarCollapsed');
+             return saved !== null ? JSON.parse(saved) : true;
+         }
+         return true;
+     });
+    const [isMobile, setIsMobile] = useState(false);
     
     // Estados para los datos
     const [reports, setReports] = useState([]);
@@ -34,6 +42,45 @@ export default function ReportsListPage() {
     const [departments, setDepartments] = useState([]);
     const [localities, setLocalities] = useState([]);
     const [typeReports, setTypeReports] = useState([]);
+    
+    // Estado para el rol del usuario
+    const [userRole, setUserRole] = useState(null);
+
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isAuthenticated, isLoading, router]);
+
+    useEffect(() => {
+        // Obtener el rol del usuario desde localStorage
+        const role = localStorage.getItem('userRole');
+        setUserRole(role);
+    }, []);
+
+    // Auto-colapsar en pantallas pequeñas
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            if (mobile) {
+                 setSidebarCollapsed(true);
+             }
+        };
+        
+        // Ejecutar inmediatamente al cargar
+        handleResize();
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Guardar estado del sidebar en localStorage
+     useEffect(() => {
+         if (typeof window !== 'undefined') {
+             localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+         }
+     }, [sidebarCollapsed]);
 
     useEffect(() => {
         loadReferenceData();
@@ -111,6 +158,18 @@ export default function ReportsListPage() {
         return type ? type.name : 'N/A';
     };
 
+    const handleDeleteReport = async (reportId) => {
+        if (window.confirm('¿Estás seguro de que deseas eliminar este informe?')) {
+            try {
+                await DeleteReport(reportId);
+                handleSuccess('Informe eliminado exitosamente');
+                loadReports();
+            } catch (error) {
+                handleError(error.message || 'Error inesperado al eliminar el informe');
+            }
+        }
+    };
+
     const totalPages = Math.ceil(total / pageSize);
     const activeFiltersDesc = getActiveFiltersDescription(filters, departments, localities, typeReports);
 
@@ -131,18 +190,19 @@ export default function ReportsListPage() {
     return (
         <div className={`min-vh-100 ${theme === 'dark' ? 'bg-dark text-light' : 'bg-light'}`}>
             <Header 
-                sidebarCollapsed={!sidebarOpen}
-                setSidebarCollapsed={(collapsed) => setSidebarOpen(!collapsed)}
+                sidebarCollapsed={sidebarCollapsed}
+                setSidebarCollapsed={setSidebarCollapsed}
                 isDark={theme === 'dark'}
                 toggleTheme={toggleTheme}
+                isMobile={isMobile}
             />
 
             <div className="d-flex">
                 {/* Sidebar */}
-                <Sidebar isCollapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} isDark={true} />
+                <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} isDark={true} />
 
                 {/* Main content */}
-                <main className="flex-grow-1 p-4" style={{ marginLeft: sidebarOpen ? '250px' : '70px', width: sidebarOpen ? 'calc(100% - 250px)' : 'calc(100% - 70px)', transition: 'margin-left 0.3s ease, width 0.3s ease' }}>
+                <main className="flex-grow-1 p-4" style={{ marginLeft: isMobile ? '0' : (sidebarCollapsed ? '70px' : '250px'), width: isMobile ? '100%' : (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)'), transition: 'margin-left 0.3s ease, width 0.3s ease' }}>
                         {/* Title Card */}
                         <div className={isDark ? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark": "p-4 rounded shadow-sm border-start border-4 border-secondary bg-white"}>
 
@@ -267,13 +327,17 @@ export default function ReportsListPage() {
                                                 <td>{formatDate(report.date)}</td>
                                                 <td>
                                                     <span className={`badge ${
-                                                        report.status === 'completed' ? 'bg-success' :
-                                                        report.status === 'in_progress' ? 'bg-warning' :
-                                                        'bg-secondary'
+                                                        report.status === 'complete' || report.status === 'completed' ? 'bg-success text-white' :
+                                                        report.status === 'urgent' || report.status === 'urgente' ? 'bg-danger text-white' :
+                                                        report.status === 'pending' || report.status === 'pendiente' ? 'bg-warning text-dark' :
+                                                        report.status === 'in_progress' || report.status === 'en proceso' ? 'bg-info text-white' :
+                                                        'bg-secondary text-white'
                                                     }`}>
-                                                        {report.status === 'completed' ? 'Completado' :
-                                                         report.status === 'in_progress' ? 'En Progreso' :
-                                                         'Pendiente'}
+                                                        {report.status === 'complete' || report.status === 'completed' ? 'Completado' :
+                                                         report.status === 'urgent' || report.status === 'urgente' ? 'Urgente' :
+                                                         report.status === 'pending' || report.status === 'pendiente' ? 'Pendiente' :
+                                                         report.status === 'in_progress' || report.status === 'en proceso' ? 'En Progreso' :
+                                                         report.status || 'Sin estado'}
                                                     </span>
                                                 </td>
                                                 <td>
@@ -294,6 +358,16 @@ export default function ReportsListPage() {
                                                         >
                                                             <Edit size={15} />
                                                         </button>
+                                                        {(userRole === 'admin' || userRole === 'super_admin') && (
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-outline-danger"
+                                                                onClick={() => handleDeleteReport(report.id)}
+                                                                title="Eliminar informe"
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

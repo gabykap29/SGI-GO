@@ -15,10 +15,11 @@ type Report struct {
 	TypeReport   TypeReport `json:"type_report" gorm:"foreignKey:TypeReportID"`
 	Title        string     `json:"title" gorm:"not null" binding:"required"`
 	Content      string     `json:"content" gorm:"not null" binding:"required"`
-	Files        []File     `json:"files" gorm:"foreignKey:ReportID"`
-	Description  string     `json:"description"`
-	Persons      []Person   `json:"persons" gorm:"many2many:person_report;joinForeignKey:ReportID;joinReferences:PersonID"`
-	UserID       uint       `json:"user_id"`
-	Status       string     `json:"status" gorm:"not null" default:"pending"` // Estados válidos: pending, complete, urgent
-	User         User       `json:"user" gorm:"foreignKey:UserID;references:ID" binding:"-"`
+	Files        []File     `json:"files" gorm:"foreignKey:ReportID" cascade:"all,delete"`
+
+	Description string   `json:"description"`
+	Persons     []Person `json:"persons" gorm:"many2many:person_report;joinForeignKey:ReportID;joinReferences:PersonID"`
+	UserID      uint     `json:"user_id"`
+	Status      string   `json:"status" gorm:"not null" default:"pending"` // Estados válidos: pending, complete, urgent
+	User        User     `json:"user" gorm:"foreignKey:UserID;references:ID" binding:"-"`
 }

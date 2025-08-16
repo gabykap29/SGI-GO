@@ -16,7 +16,14 @@ import { useAuth } from '../../../../hooks/useAuth';
 
 export default function CreateReportPage() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+  const [isMobile, setIsMobile] = useState(false);
   const { theme, toggleTheme, isDark } = useTheme();
   const [departments, setDepartments] = useState([]);
   const [localities, setLocalities] = useState([]);
@@ -66,17 +73,26 @@ export default function CreateReportPage() {
   // Auto-colapsar en pantallas pequeñas
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 992) {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
         setSidebarCollapsed(true);
       }
     };
-
-    if (typeof window !== 'undefined') {
-      handleResize();
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
+    
+    // Ejecutar inmediatamente al cargar
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Guardar estado del sidebar en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
 
 useEffect(() => {
   const now = new Date().toISOString(); 
@@ -189,13 +205,17 @@ useEffect(() => {
         />
         <div 
           className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}
-          style={{ marginLeft: sidebarCollapsed ? '70px' : '250px', transition: 'margin-left 0.3s ease' }}
+          style={{ 
+            marginLeft: isMobile ? '0' : (sidebarCollapsed ? '70px' : '250px'), 
+            transition: 'margin-left 0.3s ease' 
+          }}
         >
           <Header 
             sidebarCollapsed={sidebarCollapsed}
             setSidebarCollapsed={setSidebarCollapsed}
             isDark={isDark}
             toggleTheme={toggleTheme}
+            isMobile={isMobile}
           />
           
           <div className={isDark? "container-fluid py-4 bg-black" : "container-fluid py-4 bg-light"}>

@@ -122,6 +122,22 @@ export async function UpdateReport(id, reportData){
     return data;
 }
 
+export async function DeleteReport(id){
+    const token = localStorage.getItem("token")
+    const res = await fetch(apiUrl + `/api/reports/${id}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        }
+    })
+    const data = await res.json();
+    if(!res.ok){
+        throw new Error(data.error || 'Error al eliminar el informe');
+    }
+    return data;
+}
+
 // Función específica para actualizar solo el estado del reporte
 export async function UpdateReportStatus(id, status){
     const token = localStorage.getItem("token")
@@ -137,4 +153,23 @@ export async function UpdateReportStatus(id, status){
         throw new Error(data.error || 'Error al actualizar el estado del reporte');
     }
     return data;
+}
+
+// Función para obtener reportes vinculados a una persona
+export async function GetReportsByPersonId(personId) {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${apiUrl}/api/persons/${personId}/reports`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        }
+    });
+    
+    if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al obtener los reportes de la persona');
+    }
+    
+    return await res.json();
 }

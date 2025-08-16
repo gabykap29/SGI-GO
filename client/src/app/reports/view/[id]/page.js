@@ -13,7 +13,7 @@ import useTheme from '../../../../../hooks/useTheme';
 import { Sun, Moon } from 'lucide-react';
 import dayjs from 'dayjs';
 import { useAuth } from '../../../../../hooks/useAuth';
-
+import "./style.css"
 // Función para obtener el icono apropiado según el tipo de archivo
 const getFileIcon = (mimeType, size = 48) => {
   if (!mimeType) return <File size={size} className="text-muted" />;
@@ -53,7 +53,14 @@ export default function VisualizarInforme() {
   
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+  const [isMobile, setIsMobile] = useState(false);
   const [reportPersons, setReportPersons] = useState([]);
   const [showPersonModal, setShowPersonModal] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -74,16 +81,29 @@ export default function VisualizarInforme() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Manejo del sidebar responsive
+  // Auto-colapsar en pantallas pequeñas
   useEffect(() => {
     const handleResize = () => {
-      setSidebarCollapsed(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarCollapsed(true);
+      }
     };
     
+    // Ejecutar inmediatamente al cargar
     handleResize();
+    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Guardar estado del sidebar en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
 
   // Cargar datos del informe
   useEffect(() => {
@@ -91,9 +111,6 @@ export default function VisualizarInforme() {
       try {
         setLoading(true);
         const data = await getReportById(id);
-        console.log('Datos completos del informe:', data);
-        console.log('Usuario del informe:', data?.user);
-        console.log('Archivos del informe:', data?.files);
         setReport(data);
         
         if (data.persons && Array.isArray(data.persons)) {
@@ -102,12 +119,9 @@ export default function VisualizarInforme() {
         
         // Cargar URLs de archivos
         if (data.files && data.files.length > 0) {
-          console.log('Archivos encontrados:', data.files);
           const urls = {};
           for (const file of data.files) {
-            console.log('Procesando archivo:', file);
-            console.log('Tipo MIME del archivo:', file.type);
-            console.log('Es imagen?:', file.type && file.type.startsWith('image/'));
+
             // El filename es el UUID que se usa para acceder al archivo
             let filename = file.filename;
             if (!filename && file.path) {
@@ -130,8 +144,6 @@ export default function VisualizarInforme() {
               console.error('Error: No se encontró filename para el archivo:', file);
             }
           }
-          console.log('URLs finales:', urls);
-          console.log('Cantidad de URLs generadas:', Object.keys(urls).length);
           setFileUrls(urls);
         }
       } catch (err) {
@@ -146,83 +158,7 @@ export default function VisualizarInforme() {
     }
   }, [id]);
 
-  // Funciones auxiliares
-  const getBadgeClass = (tipo) => {
-    switch (tipo) {
-      case 'Accidente de Tránsito':
-        return 'bg-danger text-white';
-      case 'Robo':
-        return 'bg-warning text-dark';
-      case 'Vandalismo':
-        return 'bg-info text-white';
-      case 'Emergencia Médica':
-        return 'bg-success text-white';
-      case 'Incendio':
-        return 'bg-danger text-white';
-      case 'Disturbios':
-        return 'bg-secondary text-white';
-      case 'Otro':
-        return 'bg-primary text-white';
-      default:
-        return 'bg-secondary text-white';
-    }
-  };
 
-  const getStatusBadgeClass = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-      case 'pendiente':
-        return 'bg-warning text-dark';
-      case 'complete':
-      case 'completado':
-        return 'bg-success text-white';
-      case 'urgent':
-      case 'urgente':
-        return 'bg-danger text-white';
-      case 'in_progress':
-      case 'en proceso':
-        return 'bg-info text-white';
-      case 'resolved':
-      case 'resuelto':
-        return 'bg-success text-white';
-      case 'closed':
-      case 'cerrado':
-        return 'bg-secondary text-white';
-      default:
-        return 'bg-secondary text-white';
-    }
-  };
-
-  const getStatusDisplayText = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return 'Pendiente';
-      case 'complete':
-        return 'Completado';
-      case 'urgent':
-        return 'Urgente';
-      case 'in_progress':
-        return 'En Proceso';
-      case 'resolved':
-        return 'Resuelto';
-      case 'closed':
-        return 'Cerrado';
-      case 'pendiente':
-        return 'Pendiente';
-      case 'completado':
-        return 'Completado';
-      case 'urgente':
-        return 'Urgente';
-      case 'en proceso':
-        return 'En Proceso';
-      case 'resuelto':
-        return 'Resuelto';
-      case 'cerrado':
-        return 'Cerrado';
-      default:
-        return status || 'Sin estado';
-    }
-  };
 
   // Manejo de archivos
   const handleFileSelect = (event) => {
@@ -452,6 +388,7 @@ export default function VisualizarInforme() {
               setSidebarCollapsed={setSidebarCollapsed}
               isDark={isDark}
               toggleTheme={toggleTheme}
+              isMobile={isMobile}
             />
             <div className="container-fluid py-4">
               <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
@@ -533,123 +470,13 @@ export default function VisualizarInforme() {
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" 
         rel="stylesheet" 
       />
-      
-      <style jsx>{`
-        .card-hover {
-          transition: all 0.3s ease;
-        }
-        .card-hover:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-        .image-thumbnail {
-          cursor: pointer;
-          transition: all 0.3s ease;
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        .image-thumbnail:hover {
-          transform: scale(1.05);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .image-gallery {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 1rem;
-        }
-        .image-card {
-          position: relative;
-          overflow: hidden;
-          border-radius: 12px;
-          transition: all 0.3s ease;
-        }
-        .image-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-        .image-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
-          opacity: 0;
-          transition: opacity 0.3s ease;
-          display: flex;
-          align-items: flex-end;
-          padding: 1rem;
-        }
-        .image-card:hover .image-overlay {
-          opacity: 1;
-        }
-        .image-info {
-          color: white;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-        .person-card {
-          transition: all 0.2s ease;
-        }
-        .person-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .file-upload-area {
-          border: 2px dashed #dee2e6;
-          border-radius: 8px;
-          transition: all 0.3s ease;
-        }
-        .file-upload-area:hover {
-          border-color: #0d6efd;
-          background-color: rgba(13, 110, 253, 0.05);
-        }
-        .status-badge {
-          font-size: 0.875rem;
-          padding: 0.5rem 1rem;
-          border-radius: 20px;
-        }
-        
-        /* Responsive improvements */
-        @media (max-width: 576px) {
-          .container-fluid {
-            padding-left: 1rem;
-            padding-right: 1rem;
-          }
-          .card {
-            margin-bottom: 1rem;
-          }
-          .status-badge {
-            font-size: 0.75rem;
-            padding: 0.375rem 0.75rem;
-          }
-          .btn {
-            font-size: 0.875rem;
-          }
-          .modal-dialog {
-            margin: 0.5rem;
-          }
-        }
-        
-        @media (max-width: 768px) {
-          .card-body {
-            padding: 1rem;
-          }
-          .image-thumbnail:hover {
-            transform: none;
-          }
-          .card-hover:hover {
-            transform: none;
-          }
-        }
-      `}</style>
 
       <div className="d-flex">
         <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
         <div 
           className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}
           style={{ 
-            marginLeft: sidebarCollapsed ? '70px' : '250px', 
+            marginLeft: isMobile ? '0' : (sidebarCollapsed ? '70px' : '250px'), 
             transition: 'margin-left 0.3s ease',
             backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' 
           }}
@@ -739,7 +566,7 @@ export default function VisualizarInforme() {
                             <FileText size={16} className="me-2 text-primary" />
                             <small className="text-muted fw-semibold">TIPO</small>
                           </div>
-                          <span className={`badge ${getBadgeClass(report.type_report?.name)} status-badge`}>
+                          <span>
                             {report.type_report?.name}
                           </span>
                         </div>
@@ -752,8 +579,10 @@ export default function VisualizarInforme() {
                             <CheckCircle size={16} className="me-2 text-primary" />
                             <small className="text-muted fw-semibold">ESTADO</small>
                           </div>
-                          <span className={`badge ${getStatusBadgeClass(report.status)} status-badge`}>
-                            {getStatusDisplayText(report.status)}
+                          <span className={`${
+                            report.status === 'Urgente' ? 'badge badge-danger' : report.status === 'complete' ? 'badge badge-success' : 'badge badge-warning'
+                          }`}>
+                            {(report.status === 'complete' ? 'Completado' : report.status === "pending" ? "Pendiente": report.status)}
                           </span>
                         </div>
                       </div>
@@ -1092,7 +921,6 @@ export default function VisualizarInforme() {
                       </div>
                       <div>
                         <h6 className="mb-0 fw-semibold">{report.user?.name || 'Usuario'}</h6>
-                        <small className="text-muted">{report.user?.email || 'Sin email'}</small>
                       </div>
                     </div>
                   </div>

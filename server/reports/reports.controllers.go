@@ -2,6 +2,7 @@ package reports
 
 import (
 	"log"
+	utils_auth "sgi-go/auth/utils"
 	"sgi-go/entities"
 	"strconv"
 	"strings"
@@ -176,12 +177,22 @@ func ReportRouter(r *gin.RouterGroup) {
 		c.JSON(200, report)
 	})
 	r.DELETE("/reports/:id", func(c *gin.Context) {
+		token := c.GetHeader("Authorization")
+		token = strings.TrimPrefix(token, "Bearer ")
+		userIdStr, err := utils_auth.DecodeJWT(token)
+		userIdInt, err := strconv.ParseInt(userIdStr, 10, 64)
+		if err != nil {
+			c.JSON(401, gin.H{"error": "Token inválido", "details": err.Error()})
+			return
+		}
+		var userId int64 = userIdInt
+
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(400, gin.H{"error": "ID inválido", "details": err.Error()})
 			return
 		}
-		if err := DeleteReport(int64(id)); err != nil {
+		if err := DeleteReport(int64(id), userId); err != nil {
 			log.Println(err.Error())
 			c.JSON(500, gin.H{
 				"error":   "Error al eliminar el informe. Comuníquese con un administrador.",

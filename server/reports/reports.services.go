@@ -110,11 +110,21 @@ func EditReport(id int64, report *entities.Report) (*entities.Report, error) {
 	return &existingReport, nil
 }
 
-func DeleteReport(id int64) error {
+func DeleteReport(id int64, userId int64) error {
 	var report entities.Report
 	result := database.DB.First(&report, id)
 	if result.Error != nil {
 		return result.Error
+	}
+	user := &entities.User{}
+	resultUser := database.DB.First(user, userId)
+
+	if resultUser.Error != nil {
+		return resultUser.Error
+	}
+
+	if user.Role != "admin" {
+		return errors.New("No tienes permisos para eliminar este informe")
 	}
 
 	result = database.DB.Delete(&report)
