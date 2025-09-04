@@ -53,7 +53,7 @@ Antes de comenzar la instalación, asegúrese de tener instalados los siguientes
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/SGI-GO.git
+git clone https://github.com/gabykap29/SGI-GO.git
 cd SGI-GO
 ```
 
