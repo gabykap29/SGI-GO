@@ -91,53 +91,78 @@ export default function PersonsSearch() {
     }
   };
 
-  const filterPersons = () => {
-    let filtered = [...persons];
-    
-    // Aplicar filtro de búsqueda
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(person => 
-        person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        person.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        person.dni.includes(searchTerm) ||
-        person.phone.includes(searchTerm) ||
-        (person.email && person.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (person.address && person.address.toLowerCase().includes(searchTerm.toLowerCase()))
+// Función helper para validar si una persona es válida
+const isValidPerson = (person) => {
+  return person && 
+         typeof person === 'object' && 
+         person.id !== undefined &&
+         person.id !== null;
+};
+
+// Función helper para obtener valor seguro de una propiedad
+const getSafeValue = (value, defaultValue = '') => {
+  return value !== null && value !== undefined ? value : defaultValue;
+};
+
+// Versión más robusta de filterPersons usando los helpers
+const filterPersons = () => {
+  // Filtrar primero personas válidas
+  let filtered = persons.filter(isValidPerson);
+  
+  // Aplicar filtro de búsqueda
+  if (searchTerm.trim()) {
+    filtered = filtered.filter(person => {
+      const name = getSafeValue(person.name).toLowerCase();
+      const lastName = getSafeValue(person.last_name).toLowerCase();
+      const dni = getSafeValue(person.dni);
+      const phone = getSafeValue(person.phone);
+      const email = getSafeValue(person.email).toLowerCase();
+      const address = getSafeValue(person.address).toLowerCase();
+      
+      const searchTermLower = searchTerm.toLowerCase();
+      
+      return (
+        name.includes(searchTermLower) ||
+        lastName.includes(searchTermLower) ||
+        dni.includes(searchTerm) ||
+        phone.includes(searchTerm) ||
+        email.includes(searchTermLower) ||
+        address.includes(searchTermLower)
       );
+    });
+  }
+  
+  // Aplicar ordenamiento
+  filtered.sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (sortBy) {
+      case 'name':
+        aValue = `${getSafeValue(a.name)} ${getSafeValue(a.last_name)}`.toLowerCase();
+        bValue = `${getSafeValue(b.name)} ${getSafeValue(b.last_name)}`.toLowerCase();
+        break;
+      case 'dni':
+        aValue = getSafeValue(a.dni);
+        bValue = getSafeValue(b.dni);
+        break;
+      case 'phone':
+        aValue = getSafeValue(a.phone);
+        bValue = getSafeValue(b.phone);
+        break;
+      default:
+        aValue = getSafeValue(a.name).toLowerCase();
+        bValue = getSafeValue(b.name).toLowerCase();
     }
     
-    // Aplicar ordenamiento
-    filtered.sort((a, b) => {
-      let aValue, bValue;
-      
-      switch (sortBy) {
-        case 'name':
-          aValue = `${a.name} ${a.last_name}`.toLowerCase();
-          bValue = `${b.name} ${b.last_name}`.toLowerCase();
-          break;
-        case 'dni':
-          aValue = a.dni;
-          bValue = b.dni;
-          break;
-        case 'phone':
-          aValue = a.phone;
-          bValue = b.phone;
-          break;
-        default:
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-      }
-      
-      if (sortOrder === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-    
-    setFilteredPersons(filtered);
-  };
-
+    if (sortOrder === 'asc') {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
+  });
+  
+  setFilteredPersons(filtered);
+};
   const handleViewPerson = (personId) => {
     router.push(`/persons/view/${personId}`);
   };
