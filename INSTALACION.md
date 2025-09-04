@@ -285,7 +285,7 @@ Una vez iniciados los servicios, puede acceder al sistema a través de su navega
 
 Si encuentra problemas que no puede resolver, contacte al equipo de desarrollo:
 
-- **Correo Electrónico**: soporte@sgi-go.com
+- **Correo Electrónico**: gabriacos@gmai.com
 - **Repositorio**: Abra un issue en el repositorio de GitHub
 
 ---
