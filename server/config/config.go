@@ -15,7 +15,7 @@ func NewDbConfig() *DbConfig {
 		Host:    "localhost",
 		Port:    5432,
 		User:    "postgres",
-		Pass:    "1234",
+		Pass:    "ServidorSGI_2025",
 		DbName:  "sgi_go",
 		PortDB:  5432,
 		SslMode: "disable",
