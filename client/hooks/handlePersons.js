@@ -24,6 +24,38 @@ export const getPersons = async () => {
   }
 };
 
+export const searchPersons = async (filters = {}) => {
+  try {
+    const token = localStorage.getItem("token");
+    const queryParams = new URLSearchParams();
+
+    if (filters.name) queryParams.append('name', filters.name);
+    if (filters.last_name) queryParams.append('last_name', filters.last_name);
+    if (filters.dni) queryParams.append('dni', filters.dni);
+    if (filters.address) queryParams.append('address', filters.address);
+
+    const response = await fetch(`${API_URL}/api/persons/search?${queryParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log(data)
+
+
+    return data;
+  } catch (error) {
+    console.error('Error al buscar personas:', error);
+    throw error;
+  }
+}
+
+
 // Obtener persona por ID
 export const getPersonById = async (id) => {
   try {

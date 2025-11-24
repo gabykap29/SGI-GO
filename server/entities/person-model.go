@@ -8,6 +8,8 @@ type Person struct {
 	Address     string   `json:"address" gorm:"not null"`
 	Locality    string   `json:"locality" gorm:"not null"`
 	Province    string   `json:"province" gorm:"not null"`
+	Phone       string   `json:"phone"`
+	Email       string   `json:"email"`
 	Description string   `json:"description"`
 	Report      []Report `json:"report" gorm:"many2many:person_report;"`
 }

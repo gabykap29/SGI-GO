@@ -72,4 +72,24 @@ func PersonRouter(r *gin.RouterGroup) {
 		}
 		c.JSON(200, reports)
 	})
+	r.GET("/persons/search", func(c *gin.Context) {
+		name := c.Query("name")
+		lastName := c.Query("last_name")
+		dni := c.Query("dni")
+		address := c.Query("address")
+
+		if name == "" && lastName == "" && dni == "" && address == "" {
+			c.JSON(400, gin.H{"error": "Debe enviar por lo menos un termino de busqueda!"})
+			return
+		}
+
+		persons, err := SearchPersons(name, lastName, dni, address)
+
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Error al obtener la persona"})
+			return
+		}
+
+		c.JSON(200, gin.H{"data": persons, "count": len(persons)})
+	})
 }

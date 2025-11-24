@@ -7,7 +7,7 @@ import { getPersonById } from "../../../../../hooks/handlePersons";
 import { GetReportsByPersonId } from "../../../../../hooks/handleReports";
 import useTheme from "../../../../../hooks/useTheme";
 import { useAuth } from "../../../../../hooks/useAuth";
-import { User, FileText, ArrowLeft, Eye } from "lucide-react";
+import { User, FileText, ArrowLeft, Eye, Mail, Phone, MapPin, Calendar, CreditCard, AlertCircle, Map } from "lucide-react";
 
 export default function PersonView() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -21,7 +21,7 @@ export default function PersonView() {
   });
   const [isMobile, setIsMobile] = useState(false);
   const [windowWidth, setWindowWidth] = useState(1024);
-  
+
   const [person, setPerson] = useState(null);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +30,6 @@ export default function PersonView() {
   const router = useRouter();
   const personId = params.id;
 
-  // Hook para manejar el redimensionamiento de la ventana
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
@@ -42,7 +41,6 @@ export default function PersonView() {
       }
     };
 
-    // Establecer el ancho inicial
     if (typeof window !== 'undefined') {
       const width = window.innerWidth;
       setWindowWidth(width);
@@ -58,7 +56,6 @@ export default function PersonView() {
     };
   }, []);
 
-  // Guardar estado del sidebar en localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
@@ -88,7 +85,6 @@ export default function PersonView() {
       setReports(data);
     } catch (err) {
       console.error("Error al cargar los reportes:", err);
-      // No mostramos error aquí porque es opcional
     } finally {
       setLoading(false);
     }
@@ -105,13 +101,13 @@ export default function PersonView() {
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-warning bg-opacity-15 text-warning border border-warning";
       case "complete":
-        return "bg-green-100 text-green-800";
+        return "bg-success bg-opacity-15 text-success border border-success";
       case "urgent":
-        return "bg-red-100 text-red-800";
+        return "bg-danger bg-opacity-15 text-danger border border-danger";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-secondary bg-opacity-15 text-secondary border border-secondary";
     }
   };
 
@@ -149,35 +145,34 @@ export default function PersonView() {
   if (loading) {
     return (
       <div className={`d-flex flex-column min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light'}`}>
-        <Header 
+        <Header
           sidebarCollapsed={sidebarCollapsed}
-        setSidebarCollapsed={setSidebarCollapsed} 
-          isDark={isDark} 
-          toggleTheme={toggleTheme} 
+          setSidebarCollapsed={setSidebarCollapsed}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
           isMobile={isMobile}
         />
         <div className="d-flex flex-grow-1 position-relative">
           <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} isDark={isDark} />
-          
-          {/* Overlay para móviles */}
+
           {!sidebarCollapsed && windowWidth < 768 && (
-            <div 
-              className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" 
+            <div
+              className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
               style={{ zIndex: 1040 }}
               onClick={() => setSidebarCollapsed(true)}
             />
           )}
-          
-          <main 
-            className={`flex-grow-1 transition-all ${isDark ? 'bg-dark' : 'bg-light'}`}
-            style={{ 
+
+          <main
+            className={`flex-grow-1 ${isDark ? 'bg-dark' : 'bg-light'}`}
+            style={{
               marginLeft: windowWidth >= 768 ? (sidebarCollapsed ? '70px' : '250px') : '0',
-          width: windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%',
+              width: windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%',
               transition: 'margin-left 0.3s ease, width 0.3s ease'
             }}
           >
             <div className="container-fluid p-4">
-              <div className={`p-5 rounded shadow-sm ${isDark ? 'bg-dark border' : 'bg-white'}`}>
+              <div className={`p-5 rounded-4 shadow-sm ${isDark ? 'bg-dark border' : 'bg-white'}`}>
                 <div className="text-center">
                   <div className="d-flex justify-content-center align-items-center mb-3">
                     <div className="spinner-border text-primary me-3" role="status">
@@ -188,7 +183,7 @@ export default function PersonView() {
                       <small className="text-muted">Obteniendo datos del servidor</small>
                     </div>
                   </div>
-                  <div className="progress" style={{ height: '4px' }}>
+                  <div className="progress" style={{ height: '4px', borderRadius: '10px' }}>
                     <div className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style={{ width: '100%' }}></div>
                   </div>
                 </div>
@@ -203,55 +198,43 @@ export default function PersonView() {
   if (error) {
     return (
       <div className={`d-flex flex-column min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light'}`}>
-        <Header 
+        <Header
           sidebarCollapsed={sidebarCollapsed}
-        setSidebarCollapsed={setSidebarCollapsed} 
-          isDark={isDark} 
-          toggleTheme={toggleTheme} 
+          setSidebarCollapsed={setSidebarCollapsed}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
         />
         <div className="d-flex flex-grow-1 position-relative">
           <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} isDark={isDark} />
-          
-          {/* Overlay para móviles */}
+
           {!sidebarCollapsed && windowWidth < 768 && (
-            <div 
-              className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" 
+            <div
+              className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
               style={{ zIndex: 1040 }}
               onClick={() => setSidebarCollapsed(true)}
             />
           )}
-          
-          <main 
-            className={`flex-grow-1 transition-all ${isDark ? 'bg-dark' : 'bg-light'}`}
-            style={{ 
+
+          <main
+            className={`flex-grow-1 ${isDark ? 'bg-dark' : 'bg-light'}`}
+            style={{
               marginLeft: windowWidth >= 768 ? (sidebarCollapsed ? '70px' : '250px') : '0',
-          width: windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%',
+              width: windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%',
               transition: 'margin-left 0.3s ease, width 0.3s ease'
             }}
           >
             <div className="container-fluid p-4">
-              <div className={`alert ${isDark ? 'alert-dark border-danger' : 'alert-danger'} d-flex align-items-center`} role="alert">
-                <div className="me-3">
-                  <svg className="bi flex-shrink-0" width="24" height="24" role="img" aria-label="Danger:">
-                    <use xlinkHref="#exclamation-triangle-fill"/>
-                  </svg>
-                </div>
-                <div>
-                  <h6 className="alert-heading mb-1">Error al cargar datos</h6>
-                  <p className="mb-2">{error}</p>
-                  <button 
-                    className="btn btn-outline-danger btn-sm"
+              <div className={`alert border-0 rounded-4 ${isDark ? 'bg-danger bg-opacity-10 border-danger' : 'alert-danger'} d-flex align-items-start`} role="alert">
+                <AlertCircle className="me-3 mt-1 flex-shrink-0" size={24} />
+                <div className="flex-grow-1">
+                  <h6 className="alert-heading mb-2 fw-bold">Error al cargar datos</h6>
+                  <p className="mb-3">{error}</p>
+                  <button
+                    className="btn btn-outline-danger btn-sm rounded-pill"
                     onClick={handleBackToSearch}
-                    style={{
-                      transition: 'all 0.2s ease',
-                      transform: 'scale(1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
+                    style={{ transition: 'all 0.2s ease' }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                   >
                     <ArrowLeft className="me-2" size={16} />
                     Volver a búsqueda
@@ -268,51 +251,50 @@ export default function PersonView() {
   if (!person) {
     return (
       <div className={`d-flex flex-column min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light'}`}>
-        <Header 
+        <Header
           sidebarCollapsed={sidebarCollapsed}
-        setSidebarCollapsed={setSidebarCollapsed} 
-          isDark={isDark} 
-          toggleTheme={toggleTheme} 
+          setSidebarCollapsed={setSidebarCollapsed}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
         />
         <div className="d-flex flex-grow-1 position-relative">
           <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} isDark={isDark} />
-          
-          {/* Overlay para móviles */}
+
           {!sidebarCollapsed && windowWidth < 768 && (
-            <div 
-              className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" 
+            <div
+              className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
               style={{ zIndex: 1040 }}
               onClick={() => setSidebarCollapsed(true)}
             />
           )}
-          
-          <main 
-            className={`flex-grow-1 transition-all ${isDark ? 'bg-dark' : 'bg-light'}`}
-            style={{ 
+
+          <main
+            className={`flex-grow-1 ${isDark ? 'bg-dark' : 'bg-light'}`}
+            style={{
               marginLeft: windowWidth >= 768 ? (sidebarCollapsed ? '70px' : '250px') : '0',
-          width: windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%',
+              width: windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%',
               transition: 'margin-left 0.3s ease, width 0.3s ease'
             }}
           >
             <div className="container-fluid p-4">
-              <div className={`text-center py-5 ${isDark ? 'bg-dark border' : 'bg-white'} rounded shadow-sm`}>
+              <div className={`text-center py-5 ${isDark ? 'bg-dark border' : 'bg-white'} rounded-4 shadow-sm`}>
                 <div className="mb-4">
-                  <User size={64} className="text-muted mb-3" />
-                  <h5 className="text-muted mb-2">Persona no encontrada</h5>
-                  <p className="text-muted mb-3">La persona que buscas no existe o no tienes permisos para verla.</p>
-                  <button 
-                    className="btn btn-primary"
+                  <div className={`d-inline-flex align-items-center justify-content-center rounded-circle mb-4 ${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'}`}
+                    style={{ width: '100px', height: '100px' }}>
+                    <User size={48} className="text-muted" />
+                  </div>
+                  <h5 className="mb-2">Persona no encontrada</h5>
+                  <p className="text-muted mb-4">La persona que buscas no existe o no tienes permisos para verla.</p>
+                  <button
+                    className="btn btn-primary rounded-pill px-4"
                     onClick={handleBackToSearch}
-                    style={{
-                      transition: 'all 0.2s ease',
-                      transform: 'scale(1)'
-                    }}
+                    style={{ transition: 'all 0.2s ease' }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(13, 110, 253, 0.3)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.transform = 'translateY(0)';
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
@@ -330,227 +312,267 @@ export default function PersonView() {
 
   return (
     <div className={`d-flex flex-column min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light'}`}>
-      <Header 
+      <Header
         sidebarCollapsed={sidebarCollapsed}
-        setSidebarCollapsed={setSidebarCollapsed} 
-        isDark={isDark} 
-        toggleTheme={toggleTheme} 
+        setSidebarCollapsed={setSidebarCollapsed}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
       />
       <div className="d-flex flex-grow-1 position-relative">
         <Sidebar isCollapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} isDark={isDark} />
-        
-        {/* Overlay para móviles */}
+
         {!sidebarCollapsed && windowWidth < 768 && (
-          <div 
-            className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" 
+          <div
+            className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
             style={{ zIndex: 1040 }}
             onClick={() => setSidebarCollapsed(true)}
           />
         )}
-        
-        <main 
-          className={`flex-grow-1 transition-all ${isDark ? 'bg-dark' : 'bg-light'}`}
-          style={{ 
+
+        <main
+          className={`flex-grow-1 ${isDark ? 'bg-dark' : 'bg-light'}`}
+          style={{
             marginLeft: windowWidth >= 768 ? (sidebarCollapsed ? '70px' : '250px') : '0',
-          width: windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%',
+            width: windowWidth >= 768 ? (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)') : '100%',
             transition: 'margin-left 0.3s ease, width 0.3s ease'
           }}
         >
           <div className="container-fluid p-4">
-            {/* Botón de regreso */}
-            <div className="mb-4">
-              <button 
-                className={`btn ${isDark ? 'btn-outline-light' : 'btn-outline-secondary'}`}
-                onClick={handleBackToSearch}
-                style={{
-                  transition: 'all 0.2s ease',
-                  transform: 'scale(1)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-              >
-                <ArrowLeft className="me-2" size={16} />
-                Volver a búsqueda
-              </button>
-            </div>
+            {/* Header con gradiente y botón de regreso */}
+            <div className={`rounded-4 mb-4 overflow-hidden ${isDark ? 'bg-dark border' : 'bg-white'} shadow-sm`}>
+              <div className="position-relative" style={{
+                background: isDark
+                  ? 'linear-gradient(135deg, #242527ff 0%, #183563ff 100%)'
+                  : 'linear-gradient(135deg, #202122ff 0%, #676d74ff 100%)',
+                padding: '2rem'
+              }}>
+                <button
+                  className="btn btn-light btn-sm rounded-pill mb-3"
+                  onClick={handleBackToSearch}
+                  style={{ transition: 'all 0.2s ease' }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-4px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
+                >
+                  <ArrowLeft className="me-2" size={16} />
+                  Volver a búsqueda
+                </button>
 
-            {/* Título */}
-            <div className={`card mb-4 ${isDark ? 'bg-dark border-secondary' : 'bg-white'}`}>
-              <div className="card-body">
-                <h1 className="card-title h3 mb-0">
-                  <User className="me-2" size={24} />
-                  Información de Persona
-                </h1>
+                <div className="d-flex align-items-center">
+                  <div className="bg-white bg-opacity-20 backdrop-blur rounded-circle p-3 me-3">
+                    <User size={32} className={isDark ? 'text-white' : 'text-dark'} />
+                  </div>
+                  <div className="text-white">
+                    <h1 className="h3 mb-1 fw-bold">{person.name} {person.last_name}</h1>
+                    <p className="mb-0 opacity-90">DNI: {person.dni}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="row">
-              {/* Información de la persona */}
-              <div className="col-lg-4 mb-4">
-                <div className={`card h-100 ${isDark ? 'bg-dark border-secondary' : 'bg-white'} shadow-sm`}
-                     style={{
-                       transition: 'all 0.3s ease',
-                       transform: 'scale(1)'
-                     }}
-                     onMouseEnter={(e) => {
-                       e.currentTarget.style.transform = 'scale(1.02)';
-                       e.currentTarget.style.boxShadow = isDark ? '0 8px 25px rgba(255,255,255,0.1)' : '0 8px 25px rgba(0,0,0,0.15)';
-                     }}
-                     onMouseLeave={(e) => {
-                       e.currentTarget.style.transform = 'scale(1)';
-                       e.currentTarget.style.boxShadow = isDark ? '0 2px 10px rgba(255,255,255,0.05)' : '0 2px 10px rgba(0,0,0,0.1)';
-                     }}
+            <div className="row g-4">
+              {/* Información de la persona con iconos mejorados */}
+              <div className="col-lg-4">
+                <div className={`card border-0 rounded-4 h-100 ${isDark ? 'bg-dark' : 'bg-white'} shadow-sm`}
+                  style={{ transition: 'all 0.3s ease' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = isDark ? '0 12px 40px rgba(255,255,255,0.1)' : '0 12px 40px rgba(0,0,0,0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '';
+                  }}
                 >
-                  <div className={`card-header ${isDark ? 'bg-dark border-secondary' : 'bg-light'}`}>
-                    <h5 className="card-title mb-0 d-flex align-items-center">
-                      <User className="me-2" size={20} />
+                  <div className="card-body p-4">
+                    <h5 className="card-title mb-4 pb-3 border-bottom d-flex align-items-center">
+                      <div className="bg-primary bg-opacity-10 rounded-3 p-2 me-2">
+                        <User className="text-primary" size={20} />
+                      </div>
                       Datos Personales
                     </h5>
-                  </div>
-                  <div className="card-body">
-                    <div className="mb-3">
-                      <label className="form-label text-muted small">Nombre completo</label>
-                      <p className="fw-bold mb-0">{person.name} {person.last_name}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label text-muted small">DNI</label>
-                      <p className="fw-bold mb-0">{person.dni}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label text-muted small">Teléfono</label>
-                      <p className="fw-bold mb-0">{person.phone}</p>
-                    </div>
-                    
-                    {person.email && (
-                      <div className="mb-3">
-                        <label className="form-label text-muted small">Email</label>
-                        <p className="fw-bold mb-0">{person.email}</p>
+
+                    <div className="d-flex flex-column gap-3">
+                      <div className="d-flex align-items-start">
+                        <div className={`${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'} rounded-3 p-2 me-3`}>
+                          <CreditCard size={18} className="text-primary" />
+                        </div>
+                        <div className="flex-grow-1">
+                          <small className="text-muted d-block mb-1">DNI</small>
+                          <p className="mb-0 fw-semibold">{person.dni}</p>
+                        </div>
                       </div>
-                    )}
-                    
-                    {person.address && (
-                      <div className="mb-3">
-                        <label className="form-label text-muted small">Dirección</label>
-                        <p className="fw-bold mb-0">{person.address}</p>
-                      </div>
-                    )}
-                    
-                    {person.birth_date && (
-                      <div className="mb-3">
-                        <label className="form-label text-muted small">Fecha de nacimiento</label>
-                        <p className="fw-bold mb-0">{new Date(person.birth_date).toLocaleDateString()}</p>
-                      </div>
-                    )}
+
+                      {person.address && (
+                        <div className="d-flex align-items-start">
+                          <div className={`${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'} rounded-3 p-2 me-3`}>
+                            <MapPin size={18} className="text-danger" />
+                          </div>
+                          <div className="flex-grow-1">
+                            <small className="text-muted d-block mb-1">Dirección</small>
+                            <p className="mb-0 fw-semibold">{person.address}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {person.locality && (
+                        <div className="d-flex align-items-start">
+                          <div className={`${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'} rounded-3 p-2 me-3`}>
+                            <Map size={18} className="text-warning" />
+                          </div>
+                          <div className="flex-grow-1">
+                            <small className="text-muted d-block mb-1">Localidad</small>
+                            <p className="mb-0 fw-semibold">{person.locality}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {person.province && (
+                        <div className="d-flex align-items-start">
+                          <div className={`${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'} rounded-3 p-2 me-3`}>
+                            <Map size={18} className="text-warning" />
+                          </div>
+                          <div className="flex-grow-1">
+                            <small className="text-muted d-block mb-1">Provincia</small>
+                            <p className="mb-0 fw-semibold">{person.province}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {person.phone && (
+                        <div className="d-flex align-items-start">
+                          <div className={`${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'} rounded-3 p-2 me-3`}>
+                            <Phone size={18} className="text-warning" />
+                          </div>
+                          <div className="flex-grow-1">
+                            <small className="text-muted d-block mb-1">Teléfono</small>
+                            <p className="mb-0 fw-semibold">{person.phone}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {person.email && (
+                        <div className="d-flex align-items-start">
+                          <div className={`${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'} rounded-3 p-2 me-3`}>
+                            <Mail size={18} className="text-warning" />
+                          </div>
+                          <div className="flex-grow-1">
+                            <small className="text-muted d-block mb-1">Email</small>
+                            <p className="mb-0 fw-semibold">{person.email}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {person.description && (
+                        <div className="d-flex align-items-start">
+                          <div className={`${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'} rounded-3 p-2 me-3`}>
+                            <Map size={18} className="text-warning" />
+                          </div>
+                          <div className="flex-grow-1">
+                            <small className="text-muted d-block mb-1">Descripción</small>
+                            <p className="mb-0 fw-semibold">{person.description}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Reportes vinculados */}
-              <div className="col-lg-8 mb-4">
-                <div className={`card h-100 ${isDark ? 'bg-dark border-secondary' : 'bg-white'} shadow-sm`}
-                     style={{
-                       transition: 'all 0.3s ease',
-                       transform: 'scale(1)'
-                     }}
-                     onMouseEnter={(e) => {
-                       e.currentTarget.style.transform = 'scale(1.01)';
-                       e.currentTarget.style.boxShadow = isDark ? '0 8px 25px rgba(255,255,255,0.1)' : '0 8px 25px rgba(0,0,0,0.15)';
-                     }}
-                     onMouseLeave={(e) => {
-                       e.currentTarget.style.transform = 'scale(1)';
-                       e.currentTarget.style.boxShadow = isDark ? '0 2px 10px rgba(255,255,255,0.05)' : '0 2px 10px rgba(0,0,0,0.1)';
-                     }}
-                >
-                  <div className={`card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 ${isDark ? 'bg-dark border-secondary' : 'bg-light'}`}>
-                    <h5 className="card-title mb-0 d-flex align-items-center">
-                      <FileText className="me-2" size={20} />
-                      Reportes Vinculados
-                    </h5>
-                    <span className="badge bg-primary">
-                      {reports.length} reporte(s)
-                    </span>
-                  </div>
-                  <div className="card-body">
+              {/* Reportes vinculados mejorado */}
+              <div className="col-lg-8">
+                <div className={`card border-0 rounded-4 h-100 ${isDark ? 'bg-dark' : 'bg-white'} shadow-sm`}>
+                  <div className="card-body p-4">
+                    <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                      <h5 className="card-title mb-0 d-flex align-items-center">
+                        <div className="bg-primary bg-opacity-10 rounded-3 p-2 me-2">
+                          <FileText className="text-primary" size={20} />
+                        </div>
+                        Reportes Vinculados
+                      </h5>
+                      <span className="badge bg-primary rounded-pill px-3 py-2">
+                        {reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}
+                      </span>
+                    </div>
+
                     {reports.length === 0 ? (
                       <div className="text-center py-5">
-                        <FileText size={48} className="text-muted mb-3" />
-                        <h6 className="text-muted">Sin reportes vinculados</h6>
-                        <p className="text-muted">Esta persona no está vinculada a ningún reporte.</p>
+                        <div className={`d-inline-flex align-items-center justify-content-center rounded-circle mb-3 ${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'}`}
+                          style={{ width: '80px', height: '80px' }}>
+                          <FileText size={36} className="text-muted" />
+                        </div>
+                        <h6 className="text-muted mb-2">Sin reportes vinculados</h6>
+                        <p className="text-muted small">Esta persona no está vinculada a ningún reporte.</p>
                       </div>
                     ) : (
-                      <div className="row">
+                      <div className="row g-3">
                         {reports.map((report) => (
-                          <div key={report.id} className="col-12 mb-3">
-                            <div className={`card border-start border-primary border-3 ${isDark ? 'bg-dark border-secondary' : 'bg-white'}`}
-                                 style={{
-                                   transition: 'all 0.2s ease',
-                                   transform: 'scale(1)'
-                                 }}
-                                 onMouseEnter={(e) => {
-                                   e.currentTarget.style.transform = 'scale(1.02)';
-                                   e.currentTarget.style.boxShadow = isDark ? '0 4px 15px rgba(255,255,255,0.1)' : '0 4px 15px rgba(0,0,0,0.1)';
-                                 }}
-                                 onMouseLeave={(e) => {
-                                   e.currentTarget.style.transform = 'scale(1)';
-                                   e.currentTarget.style.boxShadow = 'none';
-                                 }}
+                          <div key={report.id} className="col-12">
+                            <div className={`card border-0 rounded-4 ${isDark ? 'bg-secondary bg-opacity-10' : 'bg-light'}`}
+                              style={{
+                                transition: 'all 0.2s ease',
+                                borderLeft: '4px solid #0d6efd !important'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateX(4px)';
+                                e.currentTarget.style.boxShadow = isDark ? '0 4px 20px rgba(255,255,255,0.1)' : '0 4px 20px rgba(0,0,0,0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateX(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
                             >
-                              <div className="card-body">
-                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-start mb-2 gap-2">
-                                  <h6 className="card-title mb-0">{report.title}</h6>
-                                  <span className={`badge ${
-                                    report.status === 'pending' ? 'bg-warning' :
-                                    report.status === 'complete' ? 'bg-success' :
-                                    report.status === 'urgent' ? 'bg-danger' : 'bg-secondary'
-                                  }`}>
+                              <div className="card-body p-3">
+                                <div className="d-flex justify-content-between align-items-start mb-3">
+                                  <h6 className="card-title mb-0 fw-semibold">{report.title}</h6>
+                                  <span className={`badge rounded-pill ${getStatusBadgeClass(report.status)}`}>
                                     {getStatusDisplayText(report.status)}
                                   </span>
                                 </div>
-                                
-                                <div className="row text-muted small mb-2 g-2">
-                                  <div className="col-lg-6 col-md-12">
-                                    <strong>Fecha:</strong> {new Date(report.date).toLocaleDateString()}
+
+                                <div className="row g-2 mb-3">
+                                  <div className="col-md-6">
+                                    <small className="text-muted d-flex align-items-center">
+                                      <Calendar size={14} className="me-1" />
+                                      {new Date(report.date).toLocaleDateString()}
+                                    </small>
                                   </div>
-                                  <div className="col-lg-6 col-md-12">
-                                    <strong>Departamento:</strong> {report.Department?.name || 'N/A'}
+                                  <div className="col-md-6">
+                                    <small className="text-muted">
+                                      <strong>Dpto:</strong> {report.Department?.name || 'N/A'}
+                                    </small>
                                   </div>
-                                  <div className="col-lg-6 col-md-12">
-                                    <strong>Localidad:</strong> {report.Locality?.name || 'N/A'}
+                                  <div className="col-md-6">
+                                    <small className="text-muted">
+                                      <strong>Localidad:</strong> {report.Locality?.name || 'N/A'}
+                                    </small>
                                   </div>
-                                  <div className="col-lg-6 col-md-12">
-                                    <strong>Tipo:</strong> {report.TypeReport?.name || 'N/A'}
+                                  <div className="col-md-6">
+                                    <small className="text-muted">
+                                      <strong>Tipo:</strong> {report.TypeReport?.name || 'N/A'}
+                                    </small>
                                   </div>
                                 </div>
-                                
+
                                 {report.description && (
-                                  <p className="card-text text-muted small">
-                                    {report.description.length > 100 
-                                      ? `${report.description.substring(0, 100)}...` 
+                                  <p className="card-text text-muted small mb-3">
+                                    {report.description.length > 100
+                                      ? `${report.description.substring(0, 100)}...`
                                       : report.description
                                     }
                                   </p>
                                 )}
-                                
+
                                 <div className="d-flex justify-content-end">
-                                  <button 
-                                    className="btn btn-primary btn-sm"
+                                  <button
+                                    className="btn btn-primary btn-sm rounded-pill px-3"
                                     onClick={() => handleViewReport(report.id)}
-                                    style={{
-                                      transition: 'all 0.2s ease',
-                                      transform: 'scale(1)'
-                                    }}
+                                    style={{ transition: 'all 0.2s ease' }}
                                     onMouseEnter={(e) => {
-                                      e.currentTarget.style.transform = 'scale(1.05)';
-                                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+                                      e.currentTarget.style.transform = 'translateY(-2px)';
+                                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.4)';
                                     }}
                                     onMouseLeave={(e) => {
-                                      e.currentTarget.style.transform = 'scale(1)';
+                                      e.currentTarget.style.transform = 'translateY(0)';
                                       e.currentTarget.style.boxShadow = 'none';
                                     }}
                                   >
