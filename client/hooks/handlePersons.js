@@ -107,12 +107,14 @@ export const createPerson = async (personData) => {
       },
       body: JSON.stringify(personData),
     });
+    const data = await response.json();
 
     if (!response.ok) {
+      console.log(data);
       throw new Error(`Error: ${response.status}`);
     }
 
-    const data = await response.json();
+
     return data;
   } catch (error) {
     console.error('Error al crear persona:', error);

@@ -363,7 +363,7 @@ export default function PersonView() {
                   </div>
                   <div className="text-white">
                     <h1 className="h3 mb-1 fw-bold">{person.name} {person.last_name}</h1>
-                    <p className="mb-0 opacity-90">DNI: {person.dni}</p>
+                    <p className="mb-0 opacity-90">DNI: {person.dni ? person.dni : 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -398,7 +398,7 @@ export default function PersonView() {
                         </div>
                         <div className="flex-grow-1">
                           <small className="text-muted d-block mb-1">DNI</small>
-                          <p className="mb-0 fw-semibold">{person.dni}</p>
+                          <p className="mb-0 fw-semibold">{person.dni ? person.dni : 'N/A'}</p>
                         </div>
                       </div>
 
@@ -538,17 +538,17 @@ export default function PersonView() {
                                   </div>
                                   <div className="col-md-6">
                                     <small className="text-muted">
-                                      <strong>Dpto:</strong> {report.Department?.name || 'N/A'}
+                                      <strong>Dpto:</strong> {report.department.name || 'N/A'}
                                     </small>
                                   </div>
                                   <div className="col-md-6">
                                     <small className="text-muted">
-                                      <strong>Localidad:</strong> {report.Locality?.name || 'N/A'}
+                                      <strong>Localidad:</strong> {report.locality.name || 'N/A'}
                                     </small>
                                   </div>
                                   <div className="col-md-6">
                                     <small className="text-muted">
-                                      <strong>Tipo:</strong> {report.TypeReport?.name || 'N/A'}
+                                      <strong>Tipo:</strong> {report.type_report.name || 'N/A'}
                                     </small>
                                   </div>
                                 </div>

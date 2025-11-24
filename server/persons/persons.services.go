@@ -9,13 +9,9 @@ import (
 )
 
 func AddPerson(person *entities.Person) (*entities.Person, error) {
-	if person.Name == "" || person.LastName == "" || person.Address == "" || person.Locality == "" || person.Province == "" || person.Phone == "" || person.Email == "" {
-		return nil, errors.New("El nombre, apellido, dirección, localidad, provincia, teléfono y correo son obligatorios")
+	if person.Name == "" || person.LastName == "" || person.Address == "" || person.Locality == "" || person.Province == "" {
+		return nil, errors.New("El nombre, apellido, dirección, localidad y provincia son obligatorios")
 	}
-	if person.Dni == "" {
-		person.Dni = "Sin Datos"
-	}
-
 	result := database.DB.Create(&person)
 
 	if result.Error != nil {
@@ -24,8 +20,8 @@ func AddPerson(person *entities.Person) (*entities.Person, error) {
 	return person, nil
 }
 func EditPerson(id string, person *entities.Person) (*entities.Person, error) {
-	if person.Name == "" || person.LastName == "" || person.Dni == "" || person.Address == "" || person.Locality == "" || person.Province == "" || person.Phone == "" || person.Email == "" {
-		return nil, errors.New("El nombre, apellido, dni, dirección, localidad, provincia, teléfono y correo son obligatorios")
+	if person.Name == "" || person.LastName == "" || person.Address == "" || person.Locality == "" || person.Province == "" {
+		return nil, errors.New("El nombre, apellido, dirección, localidad y provincia son obligatorios")
 	}
 
 	result := database.DB.Model(&entities.Person{}).Where("id=?", id).Updates(&person)

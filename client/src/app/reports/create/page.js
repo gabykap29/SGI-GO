@@ -1,12 +1,13 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { FileText, Save, ArrowLeft, Menu, Users, Calendar, MapPin, FileType, User, AlertCircle } from 'lucide-react';
+import { FileText, Save, ArrowLeft, Menu, Users, Calendar, MapPin, FileType, User, AlertCircle, Trash2, Plus } from 'lucide-react';
 import { Sidebar } from '../../../../components/Sidebard';
 import { Header } from '../../../../components/Header';
+import { AddPersonModal } from '../../../../components/AddPersonModal';
 import { getDepartments } from '../../../../hooks/handleDepartments';
 import { getLocalities } from '../../../../hooks/handleLocalities';
 import { getTypeReports } from '../../../../hooks/handleTypeReports';
-import { CreateReport } from '../../../../hooks/handleReports';
+import { CreateReport, addPersonToReport } from '../../../../hooks/handleReports';
 import { handleError, handleSuccess } from '../../../../hooks/toaster';
 import { Toaster } from 'sonner';
 import useTheme from '../../../../hooks/useTheme';
@@ -28,6 +29,8 @@ export default function CreateReportPage() {
   const [departments, setDepartments] = useState([]);
   const [localities, setLocalities] = useState([]);
   const [typeReports, setTypeReports] = useState([]);
+  const [persons, setPersons] = useState([]);
+  const [isAddPersonModalOpen, setIsAddPersonModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     department_id: 0,
     locality_id: 0,
@@ -44,21 +47,21 @@ export default function CreateReportPage() {
     async function fetchDepartments() {
       const data = await getDepartments();
       setDepartments(data);
-        // Cargar localidades al seleccionar un departamento
-        if (data.length > 0) {
-            const firstDepartmentId = data[0].id;
-            const localitiesData = await getLocalities(firstDepartmentId);
-            setLocalities(localitiesData);
-            setFormData(prev => ({
-              ...prev,
-              department_id: firstDepartmentId,
-              locality_id: localitiesData.length > 0 ? localitiesData[0].id : ''
-            }));
-        }
+      // Cargar localidades al seleccionar un departamento
+      if (data.length > 0) {
+        const firstDepartmentId = data[0].id;
+        const localitiesData = await getLocalities(firstDepartmentId);
+        setLocalities(localitiesData);
+        setFormData(prev => ({
+          ...prev,
+          department_id: firstDepartmentId,
+          locality_id: localitiesData.length > 0 ? localitiesData[0].id : ''
+        }));
+      }
       console.log('Departamentos cargados:', data);
-        const typeReportsData = await getTypeReports();
-        setTypeReports(typeReportsData);
-        console.log('Tipos de informes cargados:', typeReportsData);
+      const typeReportsData = await getTypeReports();
+      setTypeReports(typeReportsData);
+      console.log('Tipos de informes cargados:', typeReportsData);
     }
     fetchDepartments();
   }, [])
@@ -79,10 +82,10 @@ export default function CreateReportPage() {
         setSidebarCollapsed(true);
       }
     };
-    
+
     // Ejecutar inmediatamente al cargar
     handleResize();
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -94,10 +97,10 @@ export default function CreateReportPage() {
     }
   }, [sidebarCollapsed]);
 
-useEffect(() => {
-  const now = new Date().toISOString(); 
-  setFormData(prev => ({ ...prev, date: now }));
-}, []);
+  useEffect(() => {
+    const now = new Date().toISOString();
+    setFormData(prev => ({ ...prev, date: now }));
+  }, []);
 
 
   const handleInputChange = (e) => {
@@ -116,24 +119,48 @@ useEffect(() => {
     }
   };
 
-  const handleSubmit =  async (e) => {
+  const handlePersonAdded = (person) => {
+    if (persons.some(p => p.id === person.id)) {
+      handleError('La persona ya está agregada al informe');
+      return;
+    }
+    setPersons([...persons, person]);
+  };
+
+  const handleRemovePerson = (personId) => {
+    setPersons(persons.filter(p => p.id !== personId));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Datos del formulario:', formData);
-    const result = await CreateReport(formData);
-    if (!result) {
-      handleError('Error al crear el informe. Por favor, intente nuevamente.');
-      console.log(result);
-      
-    return;
-    }
-    
 
-    
-    console.log('Informe creado:', result);
-    handleSuccess('Informe creado exitosamente');
-    setTimeout(()=> {
-      window.location.href = '/reports/view/' + result.id;
-    }, 2000)
+    try {
+      const result = await CreateReport(formData);
+      if (!result) {
+        handleError('Error al crear el informe. Por favor, intente nuevamente.');
+        return;
+      }
+
+      // Vincular personas al informe
+      if (persons.length > 0) {
+        try {
+          await Promise.all(persons.map(person => addPersonToReport(result.id, person.id)));
+        } catch (error) {
+          console.error('Error al vincular personas:', error);
+          handleError('El informe se creó, pero hubo un error al vincular algunas personas.');
+        }
+      }
+
+      console.log('Informe creado:', result);
+      handleSuccess('Informe creado exitosamente');
+      setTimeout(() => {
+        window.location.href = '/reports/view/' + result.id;
+      }, 2000)
+    } catch (error) {
+      console.error('Error:', error);
+      handleError('Ocurrió un error inesperado');
+    }
   };
 
 
@@ -154,15 +181,15 @@ useEffect(() => {
 
   return (
     <>
-      <link 
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" 
-        rel="stylesheet" 
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+        rel="stylesheet"
       />
-      <link 
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" 
-        rel="stylesheet" 
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css"
+        rel="stylesheet"
       />
-      
+
       <style>
         {`
           /* Estilos para modo oscuro */
@@ -193,41 +220,46 @@ useEffect(() => {
               border-color: var(--primary-color) !important;
               color: #ffffff !important;
             }
+            .list-group-item {
+              background-color: #2d2d2d;
+              color: #ffffff;
+              border-color: #444;
+            }
           ` : ''}
         `}
       </style>
-      
+
       <div className="d-flex">
-        <Sidebar 
-          isCollapsed={sidebarCollapsed} 
+        <Sidebar
+          isCollapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
           isDark={true}
         />
-        <div 
+        <div
           className={`flex-grow-1 min-vh-100 ${isDark ? 'bg-dark text-light' : 'bg-light text-dark'}`}
-          style={{ 
-            marginLeft: isMobile ? '0' : (sidebarCollapsed ? '70px' : '250px'), 
-            transition: 'margin-left 0.3s ease' 
+          style={{
+            marginLeft: isMobile ? '0' : (sidebarCollapsed ? '70px' : '250px'),
+            transition: 'margin-left 0.3s ease'
           }}
         >
-          <Header 
+          <Header
             sidebarCollapsed={sidebarCollapsed}
             setSidebarCollapsed={setSidebarCollapsed}
             isDark={isDark}
             toggleTheme={toggleTheme}
             isMobile={isMobile}
           />
-          
-          <div className={isDark? "container-fluid py-4 bg-black" : "container-fluid py-4 bg-light"}>
+
+          <div className={isDark ? "container-fluid py-4 bg-black" : "container-fluid py-4 bg-light"}>
 
             {/* Título de la página */}
             <div className="row mb-4">
               <div className="col-12">
-                <div className={isDark ? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark": "p-4 rounded shadow-sm border-start border-4 border-secondary"}>
+                <div className={isDark ? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark" : "p-4 rounded shadow-sm border-start border-4 border-secondary"}>
                   <div className="d-flex align-items-center justify-content-between mb-2">
                     <div className="d-flex align-items-center">
-                      <FileText size={28} className="me-2" style={{color: isDark ? '#ffffff' : '#0d6efd'}} />
-                      <h1 className="h3 mb-0" style={{color: isDark ? '#ffffff' : '#0d6efd'}}>
+                      <FileText size={28} className="me-2" style={{ color: isDark ? '#ffffff' : '#0d6efd' }} />
+                      <h1 className="h3 mb-0" style={{ color: isDark ? '#ffffff' : '#0d6efd' }}>
                         Crear Nuevo Informe
                       </h1>
                     </div>
@@ -236,22 +268,22 @@ useEffect(() => {
                       Volver
                     </button>
                   </div>
-                  <p className="mb-1" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                  <p className="mb-1" style={{ color: isDark ? '#d4d4d4' : '#6c757d' }}>
                     Complete todos los campos para crear un nuevo informe.
                   </p>
                   <nav aria-label="breadcrumb">
                     <ol className="breadcrumb mb-0">
                       <li className="breadcrumb-item">
-                        <a href="#" className="text-decoration-none" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                        <a href="#" className="text-decoration-none" style={{ color: isDark ? '#d4d4d4' : '#6c757d' }}>
                           Inicio
                         </a>
                       </li>
                       <li className="breadcrumb-item">
-                        <a href="#" className="text-decoration-none" style={{color: isDark ? '#d4d4d4' : '#6c757d'}}>
+                        <a href="#" className="text-decoration-none" style={{ color: isDark ? '#d4d4d4' : '#6c757d' }}>
                           Informes
                         </a>
                       </li>
-                      <li className="breadcrumb-item active" aria-current="page" style={{color: isDark ? '#ffffff' : 'inherit'}}>
+                      <li className="breadcrumb-item active" aria-current="page" style={{ color: isDark ? '#ffffff' : 'inherit' }}>
                         Crear Informe
                       </li>
                     </ol>
@@ -278,9 +310,9 @@ useEffect(() => {
                         {/* Primera fila - Ubicación */}
                         <div className="col-md-6">
                           <div className="form-floating">
-                            <select 
-                              className="form-select" 
-                              id="department_id" 
+                            <select
+                              className="form-select"
+                              id="department_id"
                               name="department_id"
                               value={formData.department_id}
                               onChange={handleInputChange}
@@ -291,7 +323,7 @@ useEffect(() => {
                                 <option key={dept.id} value={dept.id}>{dept.name}</option>
                               ))}
                             </select>
-                            <label htmlFor="department_id" style={{color: isDark ? '' : 'inherit'}}>
+                            <label htmlFor="department_id" style={{ color: isDark ? '' : 'inherit' }}>
                               <MapPin size={16} className="me-1" />
                               Departamento *
                             </label>
@@ -300,9 +332,9 @@ useEffect(() => {
 
                         <div className="col-md-6">
                           <div className="form-floating">
-                            <select 
-                              className="form-select" 
-                              id="locality_id" 
+                            <select
+                              className="form-select"
+                              id="locality_id"
                               name="locality_id"
                               value={formData.locality_id}
                               onChange={handleInputChange}
@@ -314,7 +346,7 @@ useEffect(() => {
                                 <option key={locality.id} value={locality.id}>{locality.name}</option>
                               ))}
                             </select>
-                            <label htmlFor="locality_id" style={{color: isDark ? '' : 'inherit'}}>
+                            <label htmlFor="locality_id" style={{ color: isDark ? '' : 'inherit' }}>
                               <MapPin size={16} className="me-1" />
                               Localidad *
                             </label>
@@ -324,16 +356,16 @@ useEffect(() => {
                         {/* Segunda fila - Fecha y Tipo */}
                         <div className="col-md-6">
                           <div className="form-floating">
-                            <input 
-                              type="datetime-local" 
-                              className="form-control" 
-                              id="date" 
+                            <input
+                              type="datetime-local"
+                              className="form-control"
+                              id="date"
                               name="date"
                               value={formData.date}
                               onChange={handleInputChange}
-                              required 
+                              required
                             />
-                            <label htmlFor="date" style={{color: isDark ? '' : 'inherit'}}>
+                            <label htmlFor="date" style={{ color: isDark ? '' : 'inherit' }}>
                               <Calendar size={16} className="me-1" />
                               Fecha *
                             </label>
@@ -342,9 +374,9 @@ useEffect(() => {
 
                         <div className="col-md-6">
                           <div className="form-floating">
-                            <select 
-                              className="form-select" 
-                              id="type_report_id" 
+                            <select
+                              className="form-select"
+                              id="type_report_id"
                               name="type_report_id"
                               value={formData.type_report_id}
                               onChange={handleInputChange}
@@ -355,7 +387,7 @@ useEffect(() => {
                                 <option key={type.id} value={type.id}>{type.name}</option>
                               ))}
                             </select>
-                            <label htmlFor="type_report_id" style={{color: isDark ? '' : 'inherit'}}>
+                            <label htmlFor="type_report_id" style={{ color: isDark ? '' : 'inherit' }}>
                               <FileType size={16} className="me-1" />
                               Tipo de Informe *
                             </label>
@@ -365,23 +397,23 @@ useEffect(() => {
                         {/* Tercera fila - Título */}
                         <div className="col-md-6">
                           <div className="form-floating">
-                            <input 
-                              type="text" 
-                              className="form-control" 
-                              id="title" 
+                            <input
+                              type="text"
+                              className="form-control"
+                              id="title"
                               name="title"
                               value={formData.title}
                               onChange={handleInputChange}
                               placeholder="Ingrese el título del informe"
-                              required 
+                              required
                             />
-                            <label htmlFor="title" style={{color: isDark ? '' : 'inherit'}}>
+                            <label htmlFor="title" style={{ color: isDark ? '' : 'inherit' }}>
                               <FileText size={16} className="me-1" />
                               Título del Informe *
                             </label>
                           </div>
                         </div>
-                        
+
                         <div className="col-md-6">
                           <div className="form-floating">
                             <select
@@ -397,19 +429,19 @@ useEffect(() => {
                               <option value="Urgente">Urgente</option>
                               <option value="Completado">Completado</option>
                             </select>
-                            <label htmlFor="status" style={{color: isDark ? '' : 'inherit'}}>
+                            <label htmlFor="status" style={{ color: isDark ? '' : 'inherit' }}>
                               <FileType size={16} className="me-1" />
                               Estado *
                             </label>
                           </div>
                         </div>
-                        
+
                         {/* Cuarta fila - Contenido */}
                         <div className="col-12">
                           <div className="form-floating">
-                            <textarea 
-                              className="form-control" 
-                              id="content" 
+                            <textarea
+                              className="form-control"
+                              id="content"
                               name="content"
                               value={formData.content}
                               onChange={handleInputChange}
@@ -417,7 +449,7 @@ useEffect(() => {
                               style={{ height: '150px' }}
                               required
                             ></textarea>
-                            <label htmlFor="content" style={{color: isDark ? '' : 'inherit'}}>
+                            <label htmlFor="content" style={{ color: isDark ? '' : 'inherit' }}>
                               <FileText size={16} className="me-1" />
                               Contenido del Informe *
                             </label>
@@ -427,34 +459,78 @@ useEffect(() => {
                         {/* Quinta fila - Descripción */}
                         <div className="col-12">
                           <div className="form-floating">
-                            <textarea 
-                              className="form-control" 
-                              id="description" 
+                            <textarea
+                              className="form-control"
+                              id="description"
                               name="description"
                               value={formData.description}
                               onChange={handleInputChange}
                               placeholder="Ingrese una descripción adicional (opcional)"
                               style={{ height: '100px' }}
                             ></textarea>
-                            <label htmlFor="description" style={{color: isDark ? '#ffffff' : 'inherit'}}>
+                            <label htmlFor="description" style={{ color: isDark ? '#ffffff' : 'inherit' }}>
                               <FileText size={16} className="me-1" />
                               Descripción Adicional
                             </label>
                           </div>
                         </div>
 
+                        {/* Personas Involucradas */}
+                        <div className="col-12">
+                          <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h6 className={isDark ? "text-light mb-0" : "text-dark mb-0"}>
+                              <Users size={18} className="me-2" />
+                              Personas Involucradas
+                            </h6>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-primary"
+                              onClick={() => setIsAddPersonModalOpen(true)}
+                            >
+                              <Plus size={16} className="me-1" />
+                              Agregar Persona
+                            </button>
+                          </div>
+
+                          {persons.length === 0 ? (
+                            <div className={`text-center p-3 rounded border ${isDark ? 'border-secondary text-muted' : 'bg-light text-muted'}`}>
+                              No hay personas agregadas a este informe.
+                            </div>
+                          ) : (
+                            <div className="list-group">
+                              {persons.map(person => (
+                                <div key={person.id} className="list-group-item d-flex justify-content-between align-items-center">
+                                  <div>
+                                    <div className="fw-bold">{person.name} {person.last_name}</div>
+                                    <small className={isDark ? "text-muted" : "text-muted"}>
+                                      DNI: {person.dni || 'Sin DNI'} - {person.locality}
+                                    </small>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleRemovePerson(person.id)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                         {/* Botones de acción */}
                         <div className="col-12">
                           <div className="d-flex justify-content-end gap-3 pt-3 border-top">
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               className={`btn ${isDark ? 'btn-outline-light' : 'btn-outline-secondary'}`}
                             >
                               <ArrowLeft size={18} className="me-1" />
                               Cancelar
                             </button>
-                            <button 
-                              type="submit" 
+                            <button
+                              type="submit"
                               className={`btn ${isDark ? 'btn-light' : 'btn-dark'}`}
                               onClick={handleSubmit}
                             >
@@ -475,9 +551,9 @@ useEffect(() => {
               <div className="col-12">
                 <div className={`alert ${isDark ? 'alert-primary' : 'alert-info'} border-0 shadow-sm`}>
                   <div className="d-flex align-items-center">
-                    <AlertCircle size={20} className="me-2" style={{color: isDark ? '#ffffff' : 'inherit'}} />
-                    <div style={{color: isDark ? '#ffffff' : 'inherit'}}>
-                      <strong>Información:</strong> Los campos marcados con (*) son obligatorios. 
+                    <AlertCircle size={20} className="me-2" style={{ color: isDark ? '#ffffff' : 'inherit' }} />
+                    <div style={{ color: isDark ? '#ffffff' : 'inherit' }}>
+                      <strong>Información:</strong> Los campos marcados con (*) son obligatorios.
                       Asegúrese de completar toda la información requerida antes de guardar el informe.
                     </div>
                   </div>
@@ -487,12 +563,20 @@ useEffect(() => {
           </div>
         </div>
       </div>
-      <Toaster 
+
+      <AddPersonModal
+        isOpen={isAddPersonModalOpen}
+        onClose={() => setIsAddPersonModalOpen(false)}
+        onPersonAdded={handlePersonAdded}
+        isDark={isDark}
+      />
+
+      <Toaster
         position="top-right"
         richColors
         closeButton
         duration={4000}
-      />  
+      />
     </>
   );
 }

@@ -9,10 +9,12 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
   const [isSearching, setIsSearching] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [noDni, setNoDni] = useState(false);
   const [newPersonData, setNewPersonData] = useState({
     name: '',
     last_name: '',
     dni: '',
+    phone: '',
     address: '',
     locality: '',
     province: '',
@@ -25,10 +27,12 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
       setDni('');
       setPersonFound(null);
       setShowCreateForm(false);
+      setNoDni(false);
       setNewPersonData({
         name: '',
         last_name: '',
         dni: '',
+        phone: '',
         address: '',
         locality: '',
         province: '',
@@ -64,16 +68,31 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
     }
   };
 
+  const handleNoDniChange = (e) => {
+    const checked = e.target.checked;
+    setNoDni(checked);
+    if (checked) {
+      setShowCreateForm(true);
+      setPersonFound(null);
+      setDni('');
+      setNewPersonData(prev => ({ ...prev, dni: '' }));
+    } else {
+      setShowCreateForm(false);
+    }
+  };
+
   const handleCreatePerson = async () => {
     // Validate required fields
-    if (!newPersonData.name || !newPersonData.last_name || !newPersonData.dni || 
-        !newPersonData.address || !newPersonData.locality || !newPersonData.province) {
+    // Si noDni es true, no validamos dni
+    if (!newPersonData.name || !newPersonData.last_name || (!noDni && !newPersonData.dni) ||
+      !newPersonData.address || !newPersonData.locality || !newPersonData.province) {
       handleError('Por favor complete todos los campos obligatorios');
       return;
     }
 
     setIsCreating(true);
     try {
+      // Si es sin dni, aseguramos que vaya vacío o como prefiera el backend (el backend pone "Sin Datos" si va vacío)
       const createdPerson = await createPerson(newPersonData);
       setPersonFound(createdPerson);
       setShowCreateForm(false);
@@ -205,7 +224,7 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
           }
         }
       `}</style>
-      
+
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
@@ -220,7 +239,7 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
               </button>
             </div>
           </div>
-          
+
           {/* Body */}
           <div className="modal-body">
             {/* DNI Search */}
@@ -229,19 +248,20 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
                 <Search className="me-2" size={16} />
                 Buscar por DNI *
               </label>
-              <div className="input-group">
+              <div className="input-group mb-2">
                 <input
                   type="text"
                   className={`form-control ${isDark ? 'form-control-dark' : ''}`}
                   placeholder="Ingrese el DNI de la persona"
                   value={dni}
                   onChange={(e) => setDni(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearchByDni()}
+                  onKeyPress={(e) => e.key === 'Enter' && !noDni && handleSearchByDni()}
+                  disabled={noDni}
                 />
-                <button 
+                <button
                   className="btn btn-primary"
                   onClick={handleSearchByDni}
-                  disabled={isSearching}
+                  disabled={isSearching || noDni}
                 >
                   {isSearching ? (
                     <div className="spinner-border spinner-border-sm" role="status">
@@ -252,8 +272,21 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
                   )}
                 </button>
               </div>
+
+              <div className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="noDniCheck"
+                  checked={noDni}
+                  onChange={handleNoDniChange}
+                />
+                <label className="form-check-label" htmlFor="noDniCheck">
+                  Persona sin DNI / No recuerdo el DNI
+                </label>
+              </div>
             </div>
-            
+
             {/* Person Found */}
             {personFound && (
               <div className="person-card">
@@ -278,7 +311,7 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
                 )}
               </div>
             )}
-            
+
             {/* Create New Person Form */}
             {showCreateForm && (
               <div className="person-card">
@@ -286,7 +319,7 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
                   <AlertCircle className="text-warning me-2" size={20} />
                   <h6 className="mb-0 text-warning">Crear Nueva Persona</h6>
                 </div>
-                
+
                 <div className="row">
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Nombre *</label>
@@ -311,21 +344,36 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
                     />
                   </div>
                 </div>
-                
+
                 <div className="row">
                   <div className="col-md-6 mb-3">
-                    <label className="form-label">DNI *</label>
+                    <label className="form-label">DNI {noDni ? '(Opcional)' : '*'}</label>
                     <input
                       type="text"
                       className={`form-control ${isDark ? 'form-control-dark' : ''}`}
                       name="dni"
                       value={newPersonData.dni}
                       onChange={handleInputChange}
-                      placeholder="DNI"
-                      readOnly
+                      placeholder={noDni ? "Sin DNI" : "DNI"}
+                      readOnly={!noDni}
+                      disabled={noDni}
                     />
                   </div>
                   <div className="col-md-6 mb-3">
+                    <label className="form-label">Teléfono</label>
+                    <input
+                      type="text"
+                      className={`form-control ${isDark ? 'form-control-dark' : ''}`}
+                      name="phone"
+                      value={newPersonData.phone}
+                      onChange={handleInputChange}
+                      placeholder="Teléfono"
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
+                  <div className="col-md-12 mb-3">
                     <label className="form-label">Dirección *</label>
                     <input
                       type="text"
@@ -337,7 +385,7 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
                     />
                   </div>
                 </div>
-                
+
                 <div className="row">
                   <div className="col-md-6 mb-3">
                     <label className="form-label">Localidad *</label>
@@ -362,7 +410,7 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
                     />
                   </div>
                 </div>
-                
+
                 <div className="mb-3">
                   <label className="form-label">Descripción</label>
                   <textarea
@@ -377,19 +425,19 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
               </div>
             )}
           </div>
-          
+
           {/* Footer */}
           <div className="modal-footer">
             <div className="d-flex justify-content-end gap-2">
-              <button 
+              <button
                 className="btn btn-secondary"
                 onClick={onClose}
               >
                 Cancelar
               </button>
-              
+
               {showCreateForm && (
-                <button 
+                <button
                   className="btn btn-success"
                   onClick={handleCreatePerson}
                   disabled={isCreating}
@@ -409,9 +457,9 @@ export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false 
                   )}
                 </button>
               )}
-              
+
               {personFound && (
-                <button 
+                <button
                   className="btn btn-primary"
                   onClick={handleAddPersonToReport}
                 >
