@@ -12,4 +12,5 @@ type Person struct {
 	Email       string   `json:"email" gorm:"optional"`
 	Description string   `json:"description"`
 	Report      []Report `json:"report" gorm:"many2many:person_report;"`
+	File        []File   `json:"file" gorm:"foreignKey:PersonID" cascade:"all,delete"`
 }

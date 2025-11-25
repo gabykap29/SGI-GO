@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func SaveReportFile(fileHeader *multipart.FileHeader, reportID uint) (*entities.File, error) {
+func SaveReportFile(fileHeader *multipart.FileHeader, reportID uint, description string) (*entities.File, error) {
 	uploadsPath := "uploads"
 	if _, err := os.Stat(uploadsPath); os.IsNotExist(err) {
 		os.Mkdir(uploadsPath, os.ModePerm)
@@ -40,11 +40,54 @@ func SaveReportFile(fileHeader *multipart.FileHeader, reportID uint) (*entities.
 	}
 
 	file := &entities.File{
-		Name:     fileHeader.Filename,
-		Path:     filePath,
-		Filename: filename,
-		ReportID: reportID,
-		Type:     fileHeader.Header.Get("Content-Type"),
+		Name:        fileHeader.Filename,
+		Path:        filePath,
+		Filename:    filename,
+		ReportID:    &reportID,
+		Type:        fileHeader.Header.Get("Content-Type"),
+		Description: description,
+	}
+
+	if err := database.DB.Create(file).Error; err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
+
+func SavePersonFile(fileHeader *multipart.FileHeader, personID uint, description string) (*entities.File, error) {
+	uploadsPath := "uploads"
+	if _, err := os.Stat(uploadsPath); os.IsNotExist(err) {
+		os.Mkdir(uploadsPath, os.ModePerm)
+	}
+	// vlidar MIME, solo permitir imágenes
+	allowedTypes := []string{"image/jpeg", "image/png", "image/gif"}
+	fileType := fileHeader.Header.Get("Content-Type")
+	valid := false
+	for _, t := range allowedTypes {
+		if strings.EqualFold(fileType, t) {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return nil, errors.New("tipo de archivo no permitido")
+	}
+
+	filename := uuid.New().String()
+	filePath := filepath.Join(uploadsPath, filename)
+
+	if err := saveFileToDisk(fileHeader, filePath); err != nil {
+		return nil, err
+	}
+
+	file := &entities.File{
+		Name:        fileHeader.Filename,
+		Path:        filePath,
+		Filename:    filename,
+		PersonID:    &personID,
+		Type:        fileHeader.Header.Get("Content-Type"),
+		Description: description,
 	}
 
 	if err := database.DB.Create(file).Error; err != nil {

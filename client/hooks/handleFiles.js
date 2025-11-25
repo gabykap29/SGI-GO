@@ -3,7 +3,7 @@ import { toast } from "sonner";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 // Función para subir archivos a un reporte específico
-export const uploadFile = async (file, reportId) => {
+export const uploadFile = async (file, reportId, description = '') => {
   try {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -12,6 +12,7 @@ export const uploadFile = async (file, reportId) => {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('description', description);
 
     const response = await fetch(`${API_URL}/api/uploads/${reportId}`, {
       method: 'POST',
@@ -27,12 +28,75 @@ export const uploadFile = async (file, reportId) => {
     }
 
     const data = await response.json();
-    setTimeout(() => {
-      alert('Archivo subido con éxito');
-      window.location.reload();
-    }, 2000);
+    return data.data;
   } catch (error) {
     console.error('Error uploading file:', error);
+    throw error;
+  }
+};
+
+// Función para subir archivos a un reporte con descripción
+export const uploadFileToReport = async (file, reportId, description = '') => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No se encontró el token de autenticación');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('description', description);
+
+    const response = await fetch(`${API_URL}/uploads/${reportId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al subir el archivo');
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error uploading file to report:', error);
+    throw error;
+  }
+};
+
+// Función para subir archivos a una persona con descripción
+export const uploadFileToPerson = async (file, personId, description = '') => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No se encontró el token de autenticación');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('description', description);
+
+    const response = await fetch(`${API_URL}/uploads/person/${personId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al subir el archivo');
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error uploading file to person:', error);
     throw error;
   }
 };
@@ -137,7 +201,7 @@ export const deleteFile = async (fileId) => {
 export const validateFileType = (file) => {
   const allowedTypes = [
     'image/jpeg',
-    'image/jpg', 
+    'image/jpg',
     'image/png',
     'image/gif',
     'application/pdf',
@@ -145,7 +209,7 @@ export const validateFileType = (file) => {
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain'
   ];
-  
+
   return allowedTypes.includes(file.type);
 };
 
@@ -158,11 +222,11 @@ export const validateFileSize = (file) => {
 // Función para formatear el tamaño del archivo
 export const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
@@ -171,12 +235,12 @@ export const getFileType = (filename) => {
   if (!filename || typeof filename !== 'string') {
     return 'other';
   }
-  
+
   const extension = filename.split('.').pop().toLowerCase();
-  
+
   const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
   const documentTypes = ['pdf', 'doc', 'docx', 'txt'];
-  
+
   if (imageTypes.includes(extension)) {
     return 'image';
   } else if (documentTypes.includes(extension)) {

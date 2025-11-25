@@ -19,7 +19,25 @@ func RegisterFileRoutes(r *gin.RouterGroup) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Debe adjuntar un archivo!"})
 			return
 		}
-		saveFile, err := SaveReportFile(file, uint(reportID))
+		saveFile, err := SaveReportFile(file, uint(reportID), c.PostForm("description"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar el archivo"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": saveFile})
+	})
+	r.POST("/uploads/person/:id", func(c *gin.Context) {
+		personID, err := strconv.Atoi(c.Params.ByName("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid person ID"})
+			return
+		}
+		file, err := c.FormFile("file")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Debe adjuntar un archivo!"})
+			return
+		}
+		saveFile, err := SavePersonFile(file, uint(personID), c.PostForm("description"))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar el archivo"})
 			return
@@ -36,6 +54,7 @@ func RegisterFileRoutes(r *gin.RouterGroup) {
 		}
 		c.File(filePath)
 	})
+
 	r.DELETE("/files/:id", func(c *gin.Context) {
 		id := c.Params.ByName("id")
 		if id == "" {
