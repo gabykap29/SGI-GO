@@ -80,7 +80,7 @@ export const uploadFileToPerson = async (file, personId, description = '') => {
     formData.append('file', file);
     formData.append('description', description);
 
-    const response = await fetch(`${API_URL}/uploads/person/${personId}`, {
+    const response = await fetch(`${API_URL}/api/uploads/person/${personId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

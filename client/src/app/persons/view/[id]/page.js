@@ -8,6 +8,9 @@ import { GetReportsByPersonId } from "../../../../../hooks/handleReports";
 import useTheme from "../../../../../hooks/useTheme";
 import { useAuth } from "../../../../../hooks/useAuth";
 import { User, FileText, ArrowLeft, Eye, Mail, Phone, MapPin, Calendar, CreditCard, AlertCircle, Map } from "lucide-react";
+import { usePersonFileManagement } from "./hooks/usePersonFileManagement";
+import { FilesSection } from "@/app/reports/view/[id]/components/FilesSection";
+import { ImageViewModal } from "@/app/reports/view/[id]/components/ImageViewModal";
 
 export default function PersonView() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -29,6 +32,23 @@ export default function PersonView() {
   const params = useParams();
   const router = useRouter();
   const personId = params.id;
+
+  // Gestión de archivos
+  const {
+    files,
+    fileUrls,
+    selectedFiles,
+    uploadingFiles,
+    showFileUpload,
+    setShowFileUpload,
+    handleFileSelect,
+    handleRemoveFile,
+    handleUpdateDescription,
+    handleUploadFiles,
+    handleDeleteFile
+  } = usePersonFileManagement(personId);
+
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -478,8 +498,26 @@ export default function PersonView() {
                 </div>
               </div>
 
-              {/* Reportes vinculados mejorado */}
+              {/* Columna derecha: Archivos y Reportes */}
               <div className="col-lg-8">
+                {/* Sección de Archivos */}
+                <FilesSection
+                  files={files}
+                  fileUrls={fileUrls}
+                  showFileUpload={showFileUpload}
+                  setShowFileUpload={setShowFileUpload}
+                  selectedFiles={selectedFiles}
+                  uploadingFiles={uploadingFiles}
+                  onFileSelect={handleFileSelect}
+                  onRemoveFile={handleRemoveFile}
+                  onUpdateDescription={handleUpdateDescription}
+                  onUploadFiles={handleUploadFiles}
+                  onImageClick={setSelectedImage}
+                  onDeleteFile={handleDeleteFile}
+                  isDark={isDark}
+                />
+
+                {/* Reportes vinculados mejorado */}
                 <div className={`card border-0 rounded-4 h-100 ${isDark ? 'bg-dark' : 'bg-white'} shadow-sm`}>
                   <div className="card-body p-4">
                     <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
@@ -593,6 +631,14 @@ export default function PersonView() {
           </div>
         </main>
       </div>
+
+      {/* Modal de visualización de imagen */}
+      {selectedImage && (
+        <ImageViewModal
+          imageUrl={selectedImage}
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
     </div>
   );
 }

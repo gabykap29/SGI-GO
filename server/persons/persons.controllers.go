@@ -92,4 +92,14 @@ func PersonRouter(r *gin.RouterGroup) {
 
 		c.JSON(200, gin.H{"data": persons, "count": len(persons)})
 	})
+
+	r.GET("/persons/:id/files", func(c *gin.Context) {
+		id := c.Params.ByName("id")
+		files, err := GetFilesByPersonId(id)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, files)
+	})
 }

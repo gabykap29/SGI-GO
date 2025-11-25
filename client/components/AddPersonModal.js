@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, User, Plus, X, Check, AlertCircle } from 'lucide-react';
-import { getPersonByDni, createPerson } from '../hooks/handlePersons';
-import { handleError, handleSuccess } from '../hooks/toaster';
+import { getPersonByDni, createPerson } from "../hooks/handlePersons"
+import { handleError, handleSuccess } from "../hooks/toaster"
 
 export function AddPersonModal({ isOpen, onClose, onPersonAdded, isDark = false }) {
   const [dni, setDni] = useState('');

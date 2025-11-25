@@ -27,20 +27,18 @@ export const FilesSection = ({
     };
 
     return (
-        <div className={`card shadow-sm mb-4 ${isDark ? 'bg-dark text-white border-secondary' : 'bg-white'
-            }`}>
+        <div className={`card shadow-sm mb-4 ${isDark ? 'bg-dark text-white border-secondary' : 'bg-white'}`}>
             <div className="card-header border-0 pb-0">
-                <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                <div className="d-flex  align-items-center gap-2">
                     <h6 className="mb-0 fw-bold">
                         <ImageIcon size={16} className="me-2 text-primary" />
                         Archivos Adjuntos ({files?.length || 0})
                     </h6>
                     <button
-                        className="btn btn-outline-primary btn-sm"
+                        className="btn btn-outline-primary btn-sm flex-shrink-0"
                         onClick={() => setShowFileUpload(!showFileUpload)}
                     >
                         <Plus size={16} className="me-1" />
-                        <span className="d-none d-sm-inline">Agregar</span>
                         <span className="d-sm-none">+</span>
                     </button>
                 </div>

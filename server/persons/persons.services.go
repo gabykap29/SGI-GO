@@ -101,3 +101,13 @@ func SearchPersons(name, lastName, dni, address string) ([]entities.Person, erro
 	}
 	return persons, nil
 }
+
+// GetFilesByPersonId obtiene todos los archivos vinculados a una persona
+func GetFilesByPersonId(personId string) ([]entities.File, error) {
+	var files []entities.File
+	result := database.DB.Where("person_id = ?", personId).Find(&files)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return files, nil
+}
