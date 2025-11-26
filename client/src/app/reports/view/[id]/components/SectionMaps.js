@@ -42,7 +42,7 @@ const DynamicMap = dynamic(
                     />
                     <Marker position={mapPosition} icon={icon}>
                         <Popup>
-                            {title}
+                            {title || "Ubicación del reporte"}
                         </Popup>
                     </Marker>
                 </MapContainer>

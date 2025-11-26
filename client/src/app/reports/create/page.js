@@ -447,9 +447,9 @@ export default function CreateReportPage() {
                               required
                             >
                               <option value="">Seleccionar estado</option>
-                              <option value="Pendiente">Pendiente</option>
-                              <option value="Urgente">Urgente</option>
-                              <option value="Completado">Completado</option>
+                              <option value="pending">Pendiente</option>
+                              <option value="urgent">Urgente</option>
+                              <option value="complete">Completado</option>
                             </select>
                             <label htmlFor="status" style={{ color: isDark ? '' : 'inherit' }}>
                               <FileType size={16} className="me-1" />

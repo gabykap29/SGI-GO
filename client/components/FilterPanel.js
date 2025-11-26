@@ -1,103 +1,97 @@
-import { useState, useEffect } from 'react';
-import { getDepartments } from '../hooks/handleDepartments';
-import { getLocalities } from '../hooks/handleLocalities';
-import { getTypeReports } from '../hooks/handleTypeReports';
-import { Filter } from 'lucide-react';
-export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
-    const [filters, setFilters] = useState({
-        title: '',
-        department_id: '',
-        locality_id: '',
-        type_report_id: '',
-        date: '',
-        content: '',
-        description: '',
-        ...initialFilters
-    });
+"use client";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// Importamos los íconos necesarios (Lucide React)
+import { Filter, Search, Building, MapPin, Tag, Calendar, FileText, X } from 'lucide-react';
 
-    const [departments, setDepartments] = useState([]);
-    const [localities, setLocalities] = useState([]);
-    const [typeReports, setTypeReports] = useState([]);
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+// --- Datos de ejemplo (se mantienen igual) ---
+const initialDepartments = [{ id: '1', name: 'Formosa' }, { id: '2', name: 'Pilcomayo' }];
+const initialLocalities = [
+    { id: '101', name: 'Ciudad de Formosa', department_id: '1' },
+    { id: '102', name: 'Pirané', department_id: '1' },
+    { id: '201', name: 'Clorinda', department_id: '2' },
+];
+const initialTypeReports = [{ id: 'A', name: 'Accidente' }, { id: 'B', name: 'Delito' }];
+// -----------------------------------------------------------
 
+const initialFilters = {
+    title: '',
+    department_id: '',
+    locality_id: '',
+    type_report_id: '',
+    date_from: '',
+    date_to: '',
+    content: '',
+    description: '',
+    status: ''
+};
+
+export default function ReportFilterPanel({ onFiltersChange }) {
+    // 1. ESTADOS
+    const [isExpanded, setIsExpanded] = useState(true);
+    const [filters, setFilters] = useState(initialFilters);
+    const [windowWidth, setWindowWidth] = useState(0);
+
+    const [departments] = useState(initialDepartments);
+    const [localitiesData] = useState(initialLocalities);
+    const [typeReports] = useState(initialTypeReports);
+
+    // 2. EFECTOS PARA DIMENSIONES DE PANTALLA
     useEffect(() => {
-        loadDepartments();
-        loadTypeReports();
+        if (typeof window !== 'undefined') {
+            const handleResize = () => setWindowWidth(window.innerWidth);
+            handleResize();
+            window.addEventListener('resize', handleResize);
+            return () => window.removeEventListener('resize', handleResize);
+        }
     }, []);
 
-    useEffect(() => {
-        if (filters.department_id) {
-            loadLocalities(filters.department_id);
-        } else {
-            setLocalities([]);
-            setFilters(prev => ({ ...prev, locality_id: '' }));
-        }
-    }, [filters.department_id]);
+    // 3. LÓGICA DE FILTRADO Y ESTADOS DERIVADOS
+    const filteredLocalities = useMemo(() => {
+        if (!filters.department_id) return localitiesData;
+        return localitiesData.filter(loc => loc.department_id === filters.department_id);
+    }, [filters.department_id, localitiesData]);
 
-    // Hook para manejar el redimensionamiento de la ventana
-    useEffect(() => {
-        const handleResize = () => {
-            setWindowWidth(window.innerWidth);
-        };
+    const hasActiveFilters = useMemo(() => {
+        return Object.entries(filters).some(([key, value]) => {
+            if (key === 'locality_id' && !filters.department_id) return false;
+            return value !== '' && value !== 0;
+        });
+    }, [filters]);
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+    // 4. MANEJADORES DE EVENTOS
+    const handleFilterChange = useCallback((name, value) => {
+        // Obtenemos el valor previo *antes* de la actualización
+        setFilters(prev => {
+            const newFilters = { ...prev, [name]: value };
+
+            // Si el departamento cambia, resetea la localidad
+            if (name === 'department_id' && value !== prev.department_id) {
+                newFilters.locality_id = '';
+            }
+
+            return newFilters;
+        });
     }, []);
 
-    const loadDepartments = async () => {
-        try {
-            const data = await getDepartments();
-            setDepartments(data || []);
-        } catch (error) {
-            console.error('Error loading departments:', error);
+    const handleSearch = useCallback(() => {
+        if (onFiltersChange) {
+            onFiltersChange(filters);
         }
-    };
+    }, [filters, onFiltersChange]);
 
-    const loadLocalities = async (departmentId) => {
-        try {
-            const data = await getLocalities(departmentId);
-            setLocalities(data || []);
-        } catch (error) {
-            console.error('Error loading localities:', error);
+    const clearFilters = useCallback(() => {
+        setFilters(initialFilters);
+        if (onFiltersChange) {
+            onFiltersChange(initialFilters);
         }
-    };
+    }, [onFiltersChange]);
 
-    const loadTypeReports = async () => {
-        try {
-            const data = await getTypeReports();
-            setTypeReports(data || []);
-        } catch (error) {
-            console.error('Error loading type reports:', error);
-        }
-    };
 
-    const handleFilterChange = (field, value) => {
-        const newFilters = { ...filters, [field]: value };
-        setFilters(newFilters);
-        onFiltersChange(newFilters);
-    };
-
-    const clearFilters = () => {
-        const clearedFilters = {
-            title: '',
-            department_id: '',
-            locality_id: '',
-            type_report_id: '',
-            date: '',
-            content: '',
-            description: ''
-        };
-        setFilters(clearedFilters);
-        onFiltersChange(clearedFilters);
-    };
-
-    const hasActiveFilters = Object.values(filters).some(value => value !== '');
-
+    // 5. RENDERIZADO DEL COMPONENTE REPARADO
     return (
-        <div 
-            className="filter-panel card mb-4 shadow" 
-            style={{ 
+        <div
+            className="filter-panel card mb-4 shadow"
+            style={{
                 transition: 'margin-left 0.3s ease, width 0.3s ease',
                 maxWidth: '100%',
                 overflow: 'hidden',
@@ -119,10 +113,21 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                             title="Limpiar filtros"
                             aria-label="Limpiar filtros"
                         >
-                            <Filter size={15}/>
+                            <X size={15} />
                             <span className="d-none d-sm-inline">Limpiar</span>
                         </button>
                     )}
+                    <button
+                        type="button"
+                        className="btn btn-primary btn-sm rounded-pill px-2 px-sm-3 flex-fill flex-sm-grow-0"
+                        onClick={handleSearch}
+                        title="Aplicar filtros"
+                        aria-label="Buscar"
+                    >
+                        <Search size={15} className="me-1" />
+                        <span className="d-none d-sm-inline">Buscar</span>
+                        <span className="d-inline d-sm-none">Buscar</span>
+                    </button>
                     <button
                         type="button"
                         className="btn btn-outline-primary btn-sm rounded-pill px-2 px-sm-3 flex-fill flex-sm-grow-0"
@@ -130,7 +135,7 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                         aria-expanded={isExpanded}
                         aria-label={isExpanded ? 'Contraer filtros' : 'Expandir filtros'}
                     >
-                        <Filter size={15}/>
+                        <Search size={15} />
                         <span className="d-none d-sm-inline">{isExpanded ? 'Contraer' : 'Expandir'}</span>
                     </button>
                 </div>
@@ -139,10 +144,11 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
             <div className={`collapse ${isExpanded ? 'show' : ''}`}>
                 <div className="card-body p-3 p-md-4">
                     <div className="row g-3 g-md-4">
+
                         {/* Título */}
                         <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-title" className="form-label fw-semibold d-flex align-items-center" style={{ fontSize: windowWidth < 576 ? '0.9rem' : '1rem' }}>
-                                <i className="fas fa-heading me-2 text-primary"></i>
+                                <FileText size={15} className="me-2 text-primary" />
                                 <span className="d-none d-sm-inline">Título</span>
                                 <span className="d-inline d-sm-none">Título</span>
                             </label>
@@ -164,7 +170,7 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                         {/* Departamento */}
                         <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-department" className="form-label fw-semibold d-flex align-items-center">
-                                <i className="fas fa-building me-2 text-primary"></i>
+                                <Building size={15} className="me-2 text-primary" />
                                 <span className="d-none d-sm-inline">Departamento</span>
                                 <span className="d-inline d-sm-none">Depto.</span>
                             </label>
@@ -190,7 +196,7 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                         {/* Localidad */}
                         <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-locality" className="form-label fw-semibold d-flex align-items-center">
-                                <i className="fas fa-map-marker-alt me-2 text-primary"></i>
+                                <MapPin size={15} className="me-2 text-primary" />
                                 <span className="d-none d-sm-inline">Localidad</span>
                                 <span className="d-inline d-sm-none">Local.</span>
                             </label>
@@ -203,7 +209,7 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                                 aria-describedby="filter-locality-help"
                             >
                                 <option value="">Todas</option>
-                                {localities.map((locality) => (
+                                {filteredLocalities.map((locality) => (
                                     <option key={locality.id} value={locality.id}>
                                         {locality.name}
                                     </option>
@@ -217,7 +223,7 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                         {/* Tipo de Informe */}
                         <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-type" className="form-label fw-semibold d-flex align-items-center">
-                                <i className="fas fa-tags me-2 text-primary"></i>
+                                <Tag size={15} className="me-2 text-primary" />
                                 <span className="d-none d-sm-inline">Tipo de Informe</span>
                                 <span className="d-inline d-sm-none">Tipo</span>
                             </label>
@@ -240,29 +246,72 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                             </div>
                         </div>
 
-                        {/* Fecha */}
+                        {/* Estado */}
                         <div className="col-12 col-sm-6 col-lg-4">
-                            <label htmlFor="filter-date" className="form-label fw-semibold d-flex align-items-center">
-                                <i className="fas fa-calendar me-2 text-primary"></i>
-                                Fecha
+                            <label htmlFor="filter-status" className="form-label fw-semibold d-flex align-items-center">
+                                <Tag size={15} className="me-2 text-primary" />
+                                <span className="d-none d-sm-inline">Estado</span>
+                                <span className="d-inline d-sm-none">Est.</span>
+                            </label>
+                            <select
+                                id="filter-status"
+                                className="form-select rounded-3 shadow-sm"
+                                value={filters.status}
+                                onChange={(e) => handleFilterChange('status', e.target.value)}
+                                aria-describedby="filter-status-help"
+                            >
+                                <option value="">Todos</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="urgent">Urgente</option>
+                                <option value="complete">Completado</option>
+                            </select>
+                            <div id="filter-status-help" className="form-text text-muted mt-1 small d-none d-md-block">
+                                Selecciona un estado.
+                            </div>
+                        </div>
+
+                        {/* Fecha Desde */}
+                        <div className="col-12 col-sm-6 col-lg-4">
+                            <label htmlFor="filter-date-from" className="form-label fw-semibold d-flex align-items-center">
+                                <Calendar size={15} className="me-2 text-primary" />
+                                Fecha Desde
                             </label>
                             <input
-                                type="date"
-                                id="filter-date"
+                                type="datetime-local"
+                                id="filter-date-from"
                                 className="form-control rounded-3 shadow-sm"
-                                value={filters.date}
-                                onChange={(e) => handleFilterChange('date', e.target.value)}
-                                aria-describedby="filter-date-help"
+                                value={filters.date_from || ''}
+                                onChange={(e) => handleFilterChange('date_from', e.target.value)}
+                                aria-describedby="filter-date-from-help"
                             />
-                            <div id="filter-date-help" className="form-text text-muted mt-1 small d-none d-md-block">
-                                Selecciona una fecha específica.
+                            <div id="filter-date-from-help" className="form-text text-muted mt-1 small d-none d-md-block">
+                                Fecha y hora de inicio.
+                            </div>
+                        </div>
+
+                        {/* Fecha Hasta */}
+                        <div className="col-12 col-sm-6 col-lg-4">
+                            <label htmlFor="filter-date-to" className="form-label fw-semibold d-flex align-items-center">
+                                <Calendar size={15} className="me-2 text-primary" />
+                                Fecha Hasta
+                            </label>
+                            <input
+                                type="datetime-local"
+                                id="filter-date-to"
+                                className="form-control rounded-3 shadow-sm"
+                                value={filters.date_to || ''}
+                                onChange={(e) => handleFilterChange('date_to', e.target.value)}
+                                aria-describedby="filter-date-to-help"
+                            />
+                            <div id="filter-date-to-help" className="form-text text-muted mt-1 small d-none d-md-block">
+                                Fecha y hora de fin.
                             </div>
                         </div>
 
                         {/* Contenido */}
                         <div className="col-12 col-sm-6 col-lg-4">
                             <label htmlFor="filter-content" className="form-label fw-semibold d-flex align-items-center">
-                                <i className="fas fa-file-alt me-2 text-primary"></i>
+                                <FileText size={15} className="me-2 text-primary" />
                                 <span className="d-none d-sm-inline">Contenido</span>
                                 <span className="d-inline d-sm-none">Cont.</span>
                             </label>
@@ -284,7 +333,7 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
                         {/* Descripción */}
                         <div className="col-12">
                             <label htmlFor="filter-description" className="form-label fw-semibold d-flex align-items-center">
-                                <i className="fas fa-align-left me-2 text-primary"></i>
+                                <FileText size={15} className="me-2 text-primary" />
                                 <span className="d-none d-sm-inline">Descripción</span>
                                 <span className="d-inline d-sm-none">Desc.</span>
                             </label>
@@ -306,27 +355,19 @@ export default function FilterPanel({ onFiltersChange, initialFilters = {} }) {
 
                     {/* Indicador de filtros activos */}
                     {hasActiveFilters && (
-                        <div className="mt-3 mt-md-4">
-                            <div className="alert alert-primary d-flex flex-column flex-sm-row align-items-start align-items-sm-center mb-0 shadow-sm rounded-3 border-0 gap-2">
-                                <div className="d-flex align-items-center">
-                                    <i className="fas fa-info-circle me-2"></i>
-                                    <span className="fw-medium">Filtros activos aplicados</span>
-                                </div>
-                                <button
-                                    type="button"
-                                    className="btn btn-link text-primary btn-sm ms-auto p-0 fw-semibold align-self-end align-self-sm-center"
-                                    onClick={clearFilters}
-                                    aria-label="Limpiar todos los filtros"
-                                >
-                                    <i className="fas fa-times me-1 d-sm-none"></i>
-                                    <span className="d-none d-sm-inline">Limpiar todos</span>
-                                    <span className="d-inline d-sm-none">Limpiar</span>
-                                </button>
-                            </div>
+                        <div className="mt-3 mt-md-4 d-flex justify-content-end">
+                            <button
+                                type="button"
+                                className="btn btn-primary rounded-pill px-4"
+                                onClick={handleSearch}
+                            >
+                                <Search size={18} className="me-2" />
+                                Buscar Reportes
+                            </button>
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

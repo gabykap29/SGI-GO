@@ -19,7 +19,7 @@ export default function EditarInforme({ params }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const reportId = params?.id;
-  
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('sidebarCollapsed');
@@ -43,9 +43,11 @@ export default function EditarInforme({ params }) {
     status: '',
     title: '',
     content: '',
-    description: ''
+    description: '',
+    coordinates: '',
+
   });
-  
+
   // Estados para el modal de personas
   const [showPersonModal, setShowPersonModal] = useState(false);
   const [reportPersons, setReportPersons] = useState([]);
@@ -54,15 +56,15 @@ export default function EditarInforme({ params }) {
     async function fetchInitialData() {
       try {
         setLoading(true);
-        
+
         // Cargar departamentos
         const departmentsData = await getDepartments();
         setDepartments(departmentsData);
-        
+
         // Cargar tipos de informes
         const typeReportsData = await getTypeReports();
         setTypeReports(typeReportsData);
-        
+
         // Cargar datos del informe específico
         if (reportId) {
           const reportData = await getReportById(reportId);
@@ -78,22 +80,23 @@ export default function EditarInforme({ params }) {
               content: reportData.content,
               description: reportData.description || '',
               user: reportData.user || null,
-              user_id: reportData.user_id
+              user_id: reportData.user_id,
+              coordinates: reportData.latitude + ',' + reportData.longitude,
             });
-            
+
             // Cargar localidades del departamento del informe
             if (reportData.department_id) {
               const localitiesData = await getLocalities(reportData.department_id);
               setLocalities(localitiesData);
             }
-            
+
             // Cargar personas vinculadas al informe
             if (reportData.persons && Array.isArray(reportData.persons)) {
               setReportPersons(reportData.persons);
             }
           }
         }
-        
+
         console.log('Datos cargados exitosamente');
       } catch (error) {
         console.error('Error al cargar datos:', error);
@@ -118,7 +121,7 @@ export default function EditarInforme({ params }) {
         }
       }
     }
-    
+
     loadLocalitiesForDepartment();
   }, [formData.department_id]);
 
@@ -171,19 +174,37 @@ export default function EditarInforme({ params }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       console.log('Datos del formulario a actualizar:', formData);
-      const result = await UpdateReport(formData.id, formData);
-      
+
+      if (formData.coordinates && formData.coordinates.trim()) {
+        console.log('Coordenadas:', formData.coordinates);
+        const coords = formData.coordinates.split(',').map(coord => coord.trim());
+        console.log('Coordenadas parseadas:', coords);
+        if (coords.length === 2) {
+          const latitude = parseFloat(coords[0]);
+          const longitude = parseFloat(coords[1]);
+          console.log('Latitud:', latitude);
+          console.log('Longitud:', longitude);
+          formData.latitude = latitude;
+          formData.longitude = longitude;
+        }
+      }
+      let reportData = { ...formData };
+      // Eliminar el campo coordinates del objeto a enviar
+      delete reportData.coordinates;
+
+      const result = await UpdateReport(formData.id, reportData);
+
       if (!result) {
         handleError('Error al actualizar el informe. Por favor, intente nuevamente.');
         return;
       }
-      
+
       console.log('Informe actualizado:', result);
       handleSuccess('Informe actualizado exitosamente');
-      
+
       // Opcional: redirigir a la lista de informes o a la vista del informe
       // router.push('/informes');
     } catch (error) {
@@ -218,7 +239,7 @@ export default function EditarInforme({ params }) {
     try {
       // Vincular la persona al informe en el backend
       await addPersonToReport(formData.id, person.id);
-      
+
       // Agregar a la lista local
       setReportPersons(prev => [...prev, person]);
       handleSuccess(`${person.name} ${person.last_name} agregado al informe`);
@@ -232,7 +253,7 @@ export default function EditarInforme({ params }) {
     try {
       // Desvincular la persona del informe en el backend
       await removePersonFromReport(formData.id, personId);
-      
+
       // Remover de la lista local
       setReportPersons(prev => prev.filter(p => p.id !== personId));
       handleSuccess('Persona removida del informe');
@@ -268,15 +289,15 @@ export default function EditarInforme({ params }) {
 
   return (
     <>
-      <link 
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" 
-        rel="stylesheet" 
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+        rel="stylesheet"
       />
-      <link 
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" 
-        rel="stylesheet" 
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css"
+        rel="stylesheet"
       />
-      
+
       <style jsx>{`
         .main-content {
           margin-left: ${windowWidth >= 768 ? (sidebarCollapsed ? '70px' : '250px') : '0'};
@@ -459,379 +480,398 @@ export default function EditarInforme({ params }) {
           }
         }
       `}</style>
-      
+
       <div className={`sidebar-overlay ${!sidebarCollapsed && windowWidth < 768 ? 'show' : ''}`} onClick={() => setSidebarCollapsed(true)}></div>
-      <Sidebar 
-        isCollapsed={sidebarCollapsed} 
+      <Sidebar
+        isCollapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         isDark={true}
       />
       <div className="main-content">
-          <Header 
-            sidebarCollapsed={sidebarCollapsed}
-            setSidebarCollapsed={setSidebarCollapsed}
-            isDark={isDark}
-            toggleTheme={toggleTheme}
-            isMobile={isMobile}
-          />
-          
-          <div className="container-fluid py-4 min-vh-100">
-            {/* Title Card */}
-            <div className="card title-card shadow-sm mb-4">
-              <div className="card-body">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <h1 className="h3 mb-1">Editar Informe #{formData.id}</h1>
-                    <p className="text-muted mb-0">Modifica los campos necesarios para actualizar el informe</p>
-                  </div>
-                  <div className="d-flex align-items-center">
-                    <Edit size={32} className="text-primary me-3" />
-                    <button 
-                      className="btn btn-outline-secondary btn-custom d-flex align-items-center"
-                      onClick={handleCancel}
-                    >
-                      <ArrowLeft size={16} className="me-1" />
-                      Volver
-                    </button>
-                  </div>
+        <Header
+          sidebarCollapsed={sidebarCollapsed}
+          setSidebarCollapsed={setSidebarCollapsed}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
+          isMobile={isMobile}
+        />
+
+        <div className="container-fluid py-4 min-vh-100">
+          {/* Title Card */}
+          <div className="card title-card shadow-sm mb-4">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h1 className="h3 mb-1">Editar Informe #{formData.id}</h1>
+                  <p className="text-muted mb-0">Modifica los campos necesarios para actualizar el informe</p>
+                </div>
+                <div className="d-flex align-items-center">
+                  <Edit size={32} className="text-primary me-3" />
+                  <button
+                    className="btn btn-outline-secondary btn-custom d-flex align-items-center"
+                    onClick={handleCancel}
+                  >
+                    <ArrowLeft size={16} className="me-1" />
+                    Volver
+                  </button>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Formulario */}
-            <div className="row">
-              <div className="col-12">
-                <div className="card edit-card border-0 shadow-sm">
-                  <div className="card-header card-header-custom border-bottom">
-                    <h5 className="mb-0 fw-bold text-primary d-flex align-items-center">
-                      <Edit size={20} className="me-2 text-warning" />
-                      Modificar Información del Informe
-                    </h5>
-                  </div>
-                  <div className="card-body p-4">
-                    <form onSubmit={handleSubmit}>
-                      <div className="row g-4">
-                        {/* ID del informe (solo lectura) */}
-                        <div className="col-md-6">
-                          <div className="form-floating">
-                            <input 
-                              type="text" 
-                              className="form-control" 
-                              id="report_id" 
-                              value={`#${formData.id}`}
-                              readOnly
-                              disabled
-                            />
-                            <label htmlFor="report_id">
-                              <FileText size={16} className="me-1" />
-                              ID del Informe
-                            </label>
-                          </div>
+          {/* Formulario */}
+          <div className="row">
+            <div className="col-12">
+              <div className="card edit-card border-0 shadow-sm">
+                <div className="card-header card-header-custom border-bottom">
+                  <h5 className="mb-0 fw-bold text-primary d-flex align-items-center">
+                    <Edit size={20} className="me-2 text-warning" />
+                    Modificar Información del Informe
+                  </h5>
+                </div>
+                <div className="card-body p-4">
+                  <form onSubmit={handleSubmit}>
+                    <div className="row g-4">
+                      {/* ID del informe (solo lectura) */}
+                      <div className="col-md-6">
+                        <div className="form-floating">
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="report_id"
+                            value={`#${formData.id}`}
+                            readOnly
+                            disabled
+                          />
+                          <label htmlFor="report_id">
+                            <FileText size={16} className="me-1" />
+                            ID del Informe
+                          </label>
                         </div>
-                        
-                        {/* Usuario creador (solo lectura) */}
-                        <div className="col-md-6">
-                          <div className="form-floating">
-                            <input 
-                              type="text" 
-                              className="form-control" 
-                              id="created_by" 
-                              value={formData.user ? `${formData.user.name} ${formData.user.last_name} (@${formData.user.username})` : 'Cargando...'}
-                              readOnly
-                              disabled
-                            />
-                            <label htmlFor="created_by">
-                              <User size={16} className="me-1" />
-                              Creado por
-                            </label>
-                          </div>
-                        </div>
+                      </div>
 
-                        {/* Estado */}
-                        <div className="col-md-6">
-                          <div className="form-floating">
-                            <select
-                              className="form-select"
-                              id="status"
-                              name="status"
-                              value={formData.status || ''}
-                              onChange={handleInputChange}
-                              required
-                            >
-                              <option value="">Seleccionar estado</option>
-                              <option value="Pendiente">Pendiente</option>
-                              <option value="Urgente">Urgente</option>
-                              <option value="Completado">Completado</option>
-                            </select>
-                            <label htmlFor="status">
-                              <FileType size={16} className="me-1" />
-                              Estado *
-                            </label>
-                          </div>
+                      {/* Usuario creador (solo lectura) */}
+                      <div className="col-md-6">
+                        <div className="form-floating">
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="created_by"
+                            value={formData.user ? `${formData.user.name} ${formData.user.last_name} (@${formData.user.username})` : 'Cargando...'}
+                            readOnly
+                            disabled
+                          />
+                          <label htmlFor="created_by">
+                            <User size={16} className="me-1" />
+                            Creado por
+                          </label>
                         </div>
+                      </div>
 
-                        {/* Primera fila - Ubicación */}
-                        <div className="col-md-6">
-                          <div className="form-floating">
-                            <select 
-                              className="form-select" 
-                              id="department_id" 
-                              name="department_id"
-                              value={formData.department_id}
-                              onChange={handleInputChange}
-                              required
-                            >
-                              <option value="">Seleccionar departamento</option>
-                              {departments.map(dept => (
-                                <option key={dept.id} value={dept.id}>{dept.name}</option>
-                              ))}
-                            </select>
-                            <label htmlFor="department_id">
-                              <MapPin size={16} className="me-1" />
-                              Departamento *
-                            </label>
-                          </div>
+                      {/* Estado */}
+                      <div className="col-md-6">
+                        <div className="form-floating">
+                          <select
+                            className="form-select"
+                            id="status"
+                            name="status"
+                            value={formData.status || ''}
+                            onChange={handleInputChange}
+                            required
+                          >
+                            <option value="pending">Seleccionar estado</option>
+                            <option value="pending">Pendiente</option>
+                            <option value="urgent">Urgente</option>
+                            <option value="complete">Completado</option>
+                          </select>
+                          <label htmlFor="status">
+                            <FileType size={16} className="me-1" />
+                            Estado *
+                          </label>
                         </div>
+                      </div>
 
-                        <div className="col-md-6">
-                          <div className="form-floating">
-                            <select 
-                              className="form-select" 
-                              id="locality_id" 
-                              name="locality_id"
-                              value={formData.locality_id}
-                              onChange={handleInputChange}
-                              required
-                              disabled={!formData.department_id}
-                            >
-                              <option value="">Seleccionar localidad</option>
-                              {filteredLocalities.map(locality => (
-                                <option key={locality.id} value={locality.id}>{locality.name}</option>
-                              ))}
-                            </select>
-                            <label htmlFor="locality_id">
-                              <MapPin size={16} className="me-1" />
-                              Localidad *
-                            </label>
-                          </div>
+                      {/* Primera fila - Ubicación */}
+                      <div className="col-md-6">
+                        <div className="form-floating">
+                          <select
+                            className="form-select"
+                            id="department_id"
+                            name="department_id"
+                            value={formData.department_id}
+                            onChange={handleInputChange}
+                            required
+                          >
+                            <option value="">Seleccionar departamento</option>
+                            {departments.map(dept => (
+                              <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            ))}
+                          </select>
+                          <label htmlFor="department_id">
+                            <MapPin size={16} className="me-1" />
+                            Departamento *
+                          </label>
                         </div>
+                      </div>
 
-                        {/* Segunda fila - Fecha y Tipo */}
-                        <div className="col-md-6">
-                          <div className="form-floating">
-                            <input 
-                              type="datetime-local" 
-                              className="form-control" 
-                              id="date" 
-                              name="date"
-                              value={formData.date}
-                              onChange={handleInputChange}
-                              required 
-                            />
-                            <label htmlFor="date">
-                              <Calendar size={16} className="me-1" />
-                              Fecha *
-                            </label>
-                          </div>
+                      <div className="col-md-6">
+                        <div className="form-floating">
+                          <select
+                            className="form-select"
+                            id="locality_id"
+                            name="locality_id"
+                            value={formData.locality_id}
+                            onChange={handleInputChange}
+                            required
+                            disabled={!formData.department_id}
+                          >
+                            <option value="">Seleccionar localidad</option>
+                            {filteredLocalities.map(locality => (
+                              <option key={locality.id} value={locality.id}>{locality.name}</option>
+                            ))}
+                          </select>
+                          <label htmlFor="locality_id">
+                            <MapPin size={16} className="me-1" />
+                            Localidad *
+                          </label>
                         </div>
+                      </div>
 
-                        <div className="col-md-6">
-                          <div className="form-floating">
-                            <select 
-                              className="form-select" 
-                              id="type_report_id" 
-                              name="type_report_id"
-                              value={formData.type_report_id}
-                              onChange={handleInputChange}
-                              required
-                            >
-                              <option value="">Seleccionar tipo de informe</option>
-                              {typeReports.map(type => (
-                                <option key={type.id} value={type.id}>{type.name}</option>
-                              ))}
-                            </select>
-                            <label htmlFor="type_report_id">
-                              <FileType size={16} className="me-1" />
-                              Tipo de Informe *
-                            </label>
-                          </div>
+                      {/* Segunda fila - Fecha y Tipo */}
+                      <div className="col-md-6">
+                        <div className="form-floating">
+                          <input
+                            type="datetime-local"
+                            className="form-control"
+                            id="date"
+                            name="date"
+                            value={formData.date}
+                            onChange={handleInputChange}
+                            required
+                          />
+                          <label htmlFor="date">
+                            <Calendar size={16} className="me-1" />
+                            Fecha *
+                          </label>
                         </div>
+                      </div>
 
-                        {/* Tercera fila - Título */}
-                        <div className="col-12">
-                          <div className="form-floating">
-                            <input 
-                              type="text" 
-                              className="form-control" 
-                              id="title" 
-                              name="title"
-                              value={formData.title}
-                              onChange={handleInputChange}
-                              placeholder="Ingrese el título del informe"
-                              required 
-                            />
-                            <label htmlFor="title">
-                              <FileText size={16} className="me-1" />
-                              Título del Informe *
-                            </label>
-                          </div>
+                      <div className="col-md-6">
+                        <div className="form-floating">
+                          <select
+                            className="form-select"
+                            id="type_report_id"
+                            name="type_report_id"
+                            value={formData.type_report_id}
+                            onChange={handleInputChange}
+                            required
+                          >
+                            <option value="">Seleccionar tipo de informe</option>
+                            {typeReports.map(type => (
+                              <option key={type.id} value={type.id}>{type.name}</option>
+                            ))}
+                          </select>
+                          <label htmlFor="type_report_id">
+                            <FileType size={16} className="me-1" />
+                            Tipo de Informe *
+                          </label>
                         </div>
+                      </div>
 
-                        {/* Cuarta fila - Contenido */}
-                        <div className="col-12">
-                          <div className="form-floating">
-                            <textarea 
-                              className="form-control" 
-                              id="content" 
-                              name="content"
-                              value={formData.content}
-                              onChange={handleInputChange}
-                              placeholder="Ingrese el contenido detallado del informe"
-                              style={{ height: '150px' }}
-                              required
-                            ></textarea>
-                            <label htmlFor="content">
-                              <FileText size={16} className="me-1" />
-                              Contenido del Informe *
-                            </label>
-                          </div>
+                      {/* Tercera fila - Título */}
+                      <div className="col-12">
+                        <div className="form-floating">
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="title"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleInputChange}
+                            placeholder="Ingrese el título del informe"
+                            required
+                          />
+                          <label htmlFor="title">
+                            <FileText size={16} className="me-1" />
+                            Título del Informe *
+                          </label>
                         </div>
+                      </div>
 
-                        {/* Quinta fila - Descripción */}
-                        <div className="col-12">
-                          <div className="form-floating">
-                            <textarea 
-                              className="form-control" 
-                              id="description" 
-                              name="description"
-                              value={formData.description}
-                              onChange={handleInputChange}
-                              placeholder="Ingrese una descripción adicional (opcional)"
-                              style={{ height: '100px' }}
-                            ></textarea>
-                            <label htmlFor="description">
-                              <FileText size={16} className="me-1" />
-                              Descripción Adicional
-                            </label>
-                          </div>
+                      {/* Cuarta fila - Contenido */}
+                      <div className="col-12">
+                        <div className="form-floating">
+                          <textarea
+                            className="form-control"
+                            id="content"
+                            name="content"
+                            value={formData.content}
+                            onChange={handleInputChange}
+                            placeholder="Ingrese el contenido detallado del informe"
+                            style={{ height: '150px' }}
+                            required
+                          ></textarea>
+                          <label htmlFor="content">
+                            <FileText size={16} className="me-1" />
+                            Contenido del Informe *
+                          </label>
                         </div>
+                      </div>
 
-                        {/* Sexta fila - Personas involucradas */}
-                        <div className="col-12">
-                          <div className="card border-0 bg-light">
-                            <div className="card-header bg-transparent border-0 pb-0">
-                              <div className="d-flex justify-content-between align-items-center">
-                                <h6 className="mb-0 fw-bold text-primary d-flex align-items-center">
-                                  <Users size={18} className="me-2" />
-                                  Personas Involucradas
-                                </h6>
-                                <button 
-                                  type="button"
-                                  className="btn btn-outline-primary btn-sm d-flex align-items-center"
-                                  onClick={handleOpenPersonModal}
-                                >
-                                  <UserPlus size={16} className="me-1" />
-                                  Agregar Persona
-                                </button>
-                              </div>
+                      {/* Quinta fila - Descripción */}
+                      <div className="col-12">
+                        <div className="form-floating">
+                          <textarea
+                            className="form-control"
+                            id="description"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            placeholder="Ingrese una descripción adicional (opcional)"
+                            style={{ height: '100px' }}
+                          ></textarea>
+                          <label htmlFor="description">
+                            <FileText size={16} className="me-1" />
+                            Descripción Adicional
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Coordenadas */}
+                      <div className="col-12">
+                        <div className="form-floating">
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="coordinates"
+                            name="coordinates"
+                            value={formData.coordinates}
+                            onChange={handleInputChange}
+                            placeholder="Latitud, Longitud"
+                          />
+                          <label htmlFor="coordinates">
+                            <MapPin size={16} className="me-1" />
+                            Coordenadas (Latitud, Longitud)
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Sexta fila - Personas involucradas */}
+                      <div className="col-12">
+                        <div className="card border-0 bg-light">
+                          <div className="card-header bg-transparent border-0 pb-0">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <h6 className="mb-0 fw-bold text-primary d-flex align-items-center">
+                                <Users size={18} className="me-2" />
+                                Personas Involucradas
+                              </h6>
+                              <button
+                                type="button"
+                                className="btn btn-outline-primary btn-sm d-flex align-items-center"
+                                onClick={handleOpenPersonModal}
+                              >
+                                <UserPlus size={16} className="me-1" />
+                                Agregar Persona
+                              </button>
                             </div>
-                            <div className="card-body pt-2">
-                              {reportPersons.length === 0 ? (
-                                <div className="text-center py-3 text-muted">
-                                  <Users size={32} className="mb-2 opacity-50" />
-                                  <p className="mb-0">No hay personas agregadas al informe</p>
-                                  <small>Haga clic en &quot;Agregar Persona&quot; para comenzar</small>
-                                </div>
-                              ) : (
-                                <div className="row g-2">
-                                  {reportPersons.map((person) => (
-                                    <div key={person.id} className="col-md-6 col-lg-4">
-                                      <div className="card border border-primary border-opacity-25 h-100">
-                                        <div className="card-body p-3">
-                                          <div className="d-flex justify-content-between align-items-start mb-2">
-                                            <div className="d-flex align-items-center">
-                                              <User size={16} className="text-primary me-2" />
-                                              <h6 className="mb-0 fw-semibold">{person.name} {person.last_name}</h6>
-                                            </div>
-                                            <button 
-                                              type="button"
-                                              className="btn btn-outline-danger btn-sm p-1"
-                                              onClick={() => handleRemovePerson(person.id)}
-                                              title="Remover persona"
-                                            >
-                                              <AlertCircle size={14} />
-                                            </button>
+                          </div>
+                          <div className="card-body pt-2">
+                            {reportPersons.length === 0 ? (
+                              <div className="text-center py-3 text-muted">
+                                <Users size={32} className="mb-2 opacity-50" />
+                                <p className="mb-0">No hay personas agregadas al informe</p>
+                                <small>Haga clic en &quot;Agregar Persona&quot; para comenzar</small>
+                              </div>
+                            ) : (
+                              <div className="row g-2">
+                                {reportPersons.map((person) => (
+                                  <div key={person.id} className="col-md-6 col-lg-4">
+                                    <div className="card border border-primary border-opacity-25 h-100">
+                                      <div className="card-body p-3">
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                          <div className="d-flex align-items-center">
+                                            <User size={16} className="text-primary me-2" />
+                                            <h6 className="mb-0 fw-semibold">{person.name} {person.last_name}</h6>
                                           </div>
-                                          <div className="small text-muted">
-                                            <p className="mb-1"><strong>DNI:</strong> {person.dni}</p>
-                                            <p className="mb-1"><strong>Dirección:</strong> {person.address}</p>
-                                            <p className="mb-0"><strong>Localidad:</strong> {person.locality}</p>
-                                          </div>
+                                          <button
+                                            type="button"
+                                            className="btn btn-outline-danger btn-sm p-1"
+                                            onClick={() => handleRemovePerson(person.id)}
+                                            title="Remover persona"
+                                          >
+                                            <AlertCircle size={14} />
+                                          </button>
+                                        </div>
+                                        <div className="small text-muted">
+                                          <p className="mb-1"><strong>DNI:</strong> {person.dni}</p>
+                                          <p className="mb-1"><strong>Dirección:</strong> {person.address}</p>
+                                          <p className="mb-0"><strong>Localidad:</strong> {person.locality}</p>
                                         </div>
                                       </div>
                                     </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Botones de acción */}
-                        <div className="col-12">
-                          <div className="d-flex justify-content-end gap-3 pt-3 border-top">
-                            <button 
-                              type="button" 
-                              className="btn btn-outline-secondary btn-custom"
-                              onClick={handleCancel}
-                            >
-                              <ArrowLeft size={18} className="me-1" />
-                              Cancelar
-                            </button>
-                            <button type="submit" className="btn btn-warning btn-custom">
-                              <Save size={18} className="me-1" />
-                              Guardar Cambios
-                            </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
-                    </form>
-                  </div>
+
+                      {/* Botones de acción */}
+                      <div className="col-12">
+                        <div className="d-flex justify-content-end gap-3 pt-3 border-top">
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-custom"
+                            onClick={handleCancel}
+                          >
+                            <ArrowLeft size={18} className="me-1" />
+                            Cancelar
+                          </button>
+                          <button type="submit" className="btn btn-warning btn-custom">
+                            <Save size={18} className="me-1" />
+                            Guardar Cambios
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Nota informativa */}
-            <div className="row mt-4">
-              <div className="col-12">
-                <div className="alert alert-custom border-0 shadow-sm">
-                  <div className="d-flex align-items-center">
-                    <AlertCircle size={20} className="me-2" />
-                    <div>
-                      <strong>Atención:</strong> Está editando un informe existente. Los campos marcados con (*) son obligatorios. 
-                      Asegúrese de revisar todos los cambios antes de guardar.
-                    </div>
+          {/* Nota informativa */}
+          <div className="row mt-4">
+            <div className="col-12">
+              <div className="alert alert-custom border-0 shadow-sm">
+                <div className="d-flex align-items-center">
+                  <AlertCircle size={20} className="me-2" />
+                  <div>
+                    <strong>Atención:</strong> Está editando un informe existente. Los campos marcados con (*) son obligatorios.
+                    Asegúrese de revisar todos los cambios antes de guardar.
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Modal para agregar personas */}
-          <AddPersonModal 
-            isOpen={showPersonModal}
-            onClose={handleClosePersonModal}
-            onPersonAdded={handlePersonAdded}
-            isDark={isDark}
-          />
-          
-          <Toaster 
-            position="top-right"
-            richColors
-            closeButton
-            duration={4000}
-          />  
         </div>
+
+        {/* Modal para agregar personas */}
+        <AddPersonModal
+          isOpen={showPersonModal}
+          onClose={handleClosePersonModal}
+          onPersonAdded={handlePersonAdded}
+          isDark={isDark}
+        />
+
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          duration={4000}
+        />
+      </div>
     </>
   );
 }

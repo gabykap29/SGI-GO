@@ -19,30 +19,30 @@ export default function ReportsListPage() {
     const router = useRouter();
     const { theme, toggleTheme, isDark } = useTheme();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-         if (typeof window !== 'undefined') {
-             const saved = localStorage.getItem('sidebarCollapsed');
-             return saved !== null ? JSON.parse(saved) : true;
-         }
-         return true;
-     });
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('sidebarCollapsed');
+            return saved !== null ? JSON.parse(saved) : true;
+        }
+        return true;
+    });
     const [isMobile, setIsMobile] = useState(false);
-    
+
     // Estados para los datos
     const [reports, setReports] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    
+
     // Estados para filtros y paginación
     const [filters, setFilters] = useState({});
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(10);
-    
+
     // Estados para datos de referencia
     const [departments, setDepartments] = useState([]);
     const [localities, setLocalities] = useState([]);
     const [typeReports, setTypeReports] = useState([]);
-    
+
     // Estado para el rol del usuario
     const [userRole, setUserRole] = useState(null);
 
@@ -64,23 +64,23 @@ export default function ReportsListPage() {
             const mobile = window.innerWidth < 768;
             setIsMobile(mobile);
             if (mobile) {
-                 setSidebarCollapsed(true);
-             }
+                setSidebarCollapsed(true);
+            }
         };
-        
+
         // Ejecutar inmediatamente al cargar
         handleResize();
-        
+
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     // Guardar estado del sidebar en localStorage
-     useEffect(() => {
-         if (typeof window !== 'undefined') {
-             localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
-         }
-     }, [sidebarCollapsed]);
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+        }
+    }, [sidebarCollapsed]);
 
     useEffect(() => {
         loadReferenceData();
@@ -103,10 +103,10 @@ export default function ReportsListPage() {
     const fetchReports = async (newFilters = filters, page = currentPage) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const result = await getReportsWithFilters(newFilters, page, pageSize);
-            
+            console.log(result);
             if (result.error) {
                 setError(result.error);
                 setReports([]);
@@ -148,10 +148,7 @@ export default function ReportsListPage() {
         return dept ? dept.name : 'N/A';
     };
 
-    const getLocalityName = (id) => {
-        const locality = localities.find(l => l.id === id);
-        return locality ? locality.name : 'N/A';
-    };
+
 
     const getTypeReportName = (id) => {
         const type = typeReports.find(t => t.id === id);
@@ -189,7 +186,7 @@ export default function ReportsListPage() {
 
     return (
         <div className={`min-vh-100 ${theme === 'dark' ? 'bg-dark text-light' : 'bg-light'}`}>
-            <Header 
+            <Header
                 sidebarCollapsed={sidebarCollapsed}
                 setSidebarCollapsed={setSidebarCollapsed}
                 isDark={theme === 'dark'}
@@ -203,241 +200,242 @@ export default function ReportsListPage() {
 
                 {/* Main content */}
                 <main className="flex-grow-1 p-4" style={{ marginLeft: isMobile ? '0' : (sidebarCollapsed ? '70px' : '250px'), width: isMobile ? '100%' : (sidebarCollapsed ? 'calc(100% - 70px)' : 'calc(100% - 250px)'), transition: 'margin-left 0.3s ease, width 0.3s ease' }}>
-                        {/* Title Card */}
-                        <div className={isDark ? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark": "p-4 rounded shadow-sm border-start border-4 border-secondary bg-white"}>
+                    {/* Title Card */}
+                    <div className={isDark ? "p-4 rounded shadow-sm border-start border-4 border-primary bg-dark" : "p-4 rounded shadow-sm border-start border-4 border-secondary bg-white"}>
 
-                            <div className="card-body">
-                                <div className="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h1 className="h3 mb-1">Lista de Informes</h1>
-                                        <p className="text-muted mb-0">Gestiona y visualiza todos los informes del sistema</p>
-                                    </div>
-                                    <div className="d-flex align-items-center">
-                                        <i className="fas fa-file-alt fa-2x text-primary me-3"></i>
-                                        <button
-                                            type="button"
-                                            className="btn btn-primary"
-                                            onClick={() => router.push('/reports/create')}
-                                        >
-                                            <i className="fas fa-plus me-1"></i>
-                                            Nuevo Informe
-                                        </button>
-                                    </div>
+                        <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h1 className="h3 mb-1">Lista de Informes</h1>
+                                    <p className="text-muted mb-0">Gestiona y visualiza todos los informes del sistema</p>
+                                </div>
+                                <div className="d-flex align-items-center">
+                                    <i className="fas fa-file-alt fa-2x text-primary me-3"></i>
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary"
+                                        onClick={() => router.push('/reports/create')}
+                                    >
+                                        <i className="fas fa-plus me-1"></i>
+                                        Nuevo Informe
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Panel de filtros */}
-                        <FilterPanel 
-                            onFiltersChange={handleFiltersChange}
-                            initialFilters={filters}
-                        />
+                    {/* Panel de filtros */}
+                    <FilterPanel
+                        onFiltersChange={handleFiltersChange}
+                        initialFilters={filters}
+                    />
 
-                        {/* Información de filtros activos */}
-                        {activeFiltersDesc.length > 0 && (
-                            <div className="alert alert-info mb-3">
-                                <strong>Filtros activos:</strong>
-                                <ul className="mb-0 mt-1">
-                                    {activeFiltersDesc.map((desc, index) => (
-                                        <li key={index}>{desc}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {/* Información de resultados */}
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <span className="text-muted">
-                                    Mostrando {reports.length} de {total} informes
-                                    {currentPage > 1 && ` (Página ${currentPage} de ${totalPages})`}
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                className="btn btn-outline-secondary btn-sm"
-                                onClick={() => fetchReports(filters, currentPage)}
-                                disabled={loading}
-                            >
-                                <i className="fas fa-sync-alt me-1"></i>
-                                Actualizar
-                            </button>
+                    {/* Información de filtros activos */}
+                    {activeFiltersDesc.length > 0 && (
+                        <div className="alert alert-info mb-3">
+                            <strong>Filtros activos:</strong>
+                            <ul className="mb-0 mt-1">
+                                {activeFiltersDesc.map((desc, index) => (
+                                    <li key={index}>{desc}</li>
+                                ))}
+                            </ul>
                         </div>
+                    )}
 
-                        {/* Loading state */}
-                        {loading && (
-                            <div className="loading-state fade-in">
-                                <div className="spinner-border text-primary" role="status">
-                                    <span className="visually-hidden">Cargando...</span>
-                                </div>
-                                <p className="mt-3 text-muted mb-0">Cargando informes...</p>
+                    {/* Información de resultados */}
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span className="text-muted">
+                                Mostrando {reports.length} de {total} informes
+                                {currentPage > 1 && ` (Página ${currentPage} de ${totalPages})`}
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => fetchReports(filters, currentPage)}
+                            disabled={loading}
+                        >
+                            <i className="fas fa-sync-alt me-1"></i>
+                            Actualizar
+                        </button>
+                    </div>
+
+                    {/* Loading state */}
+                    {loading && (
+                        <div className="loading-state fade-in">
+                            <div className="spinner-border text-primary" role="status">
+                                <span className="visually-hidden">Cargando...</span>
                             </div>
-                        )}
+                            <p className="mt-3 text-muted mb-0">Cargando informes...</p>
+                        </div>
+                    )}
 
-                        {/* Error state */}
-                        {error && (
-                            <div className="alert alert-danger error-state fade-in" role="alert">
-                                <i className="fas fa-exclamation-triangle me-2"></i>
-                                <strong>Error:</strong> {error}
-                            </div>
-                        )}
+                    {/* Error state */}
+                    {error && (
+                        <div className="alert alert-danger error-state fade-in" role="alert">
+                            <i className="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Error:</strong> {error}
+                        </div>
+                    )}
 
-                        {/* Empty state */}
-                        {!loading && !error && reports.length === 0 && (
-                            <div className="empty-state fade-in">
-                                <i className="fas fa-file-alt"></i>
-                                <h5 className="text-muted mb-2">No se encontraron informes</h5>
-                                <p className="text-muted mb-0">No hay informes que coincidan con los filtros aplicados.</p>
-                            </div>
-                        )}
+                    {/* Empty state */}
+                    {!loading && !error && reports.length === 0 && (
+                        <div className="empty-state fade-in">
+                            <i className="fas fa-file-alt"></i>
+                            <h5 className="text-muted mb-2">No se encontraron informes</h5>
+                            <p className="text-muted mb-0">No hay informes que coincidan con los filtros aplicados.</p>
+                        </div>
+                    )}
 
-                        {/* Reports table */}
-                        {!loading && !error && reports.length > 0 && (
-                            <div className="card shadow-sm reports-table">
-                                <div className="card-body p-0">
-                                    <div className="table-responsive">
-                                        <table className="table table-striped table-hover mb-0">
-                                    <thead className={theme === 'dark' ? 'table-dark' : 'table-light'}>
-                                        <tr>
-                                            <th>Título</th>
-                                            <th>Departamento</th>
-                                            <th>Localidad</th>
-                                            <th>Tipo</th>
-                                            <th>Fecha</th>
-                                            <th>Estado</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {reports.map((report) => (
-                                            <tr key={report.id}>
-                                                <td>
-                                                    <strong>{report.title}</strong>
-                                                    {report.description && (
-                                                        <small className="d-block text-muted">
-                                                            {report.description.length > 50 
-                                                                ? `${report.description.substring(0, 50)}...`
-                                                                : report.description}
-                                                        </small>
-                                                    )}
-                                                </td>
-                                                <td>{getDepartmentName(report.department_id)}</td>
-                                                <td>{getLocalityName(report.locality_id)}</td>
-                                                <td>{getTypeReportName(report.type_report_id)}</td>
-                                                <td>{formatDate(report.date)}</td>
-                                                <td>
-                                                    <span className={`badge ${
-                                                        report.status === 'complete' || report.status === 'completed' ? 'bg-success text-white' :
-                                                        report.status === 'urgent' || report.status === 'urgente' ? 'bg-danger text-white' :
-                                                        report.status === 'pending' || report.status === 'pendiente' ? 'bg-warning text-dark' :
-                                                        report.status === 'in_progress' || report.status === 'en proceso' ? 'bg-info text-white' :
-                                                        'bg-secondary text-white'
-                                                    }`}>
-                                                        {report.status === 'complete' || report.status === 'completed' ? 'Completado' :
-                                                         report.status === 'urgent' || report.status === 'urgente' ? 'Urgente' :
-                                                         report.status === 'pending' || report.status === 'pendiente' ? 'Pendiente' :
-                                                         report.status === 'in_progress' || report.status === 'en proceso' ? 'En Progreso' :
-                                                         report.status || 'Sin estado'}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <div className="btn-group btn-group-sm" role="group">
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-outline-primary"
-                                                            onClick={() => router.push(`/reports/view/${report.id}`)}
-                                                            title="Ver informe"
-                                                        >
-                                                            <Eye size={15} />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="btn btn-outline-secondary"
-                                                            onClick={() => router.push(`/reports/edit/${report.id}`)}
-                                                            title="Editar informe"
-                                                        >
-                                                            <Edit size={15} />
-                                                        </button>
-                                                        {(userRole === 'admin' || userRole === 'super_admin') && (
+                    {/* Reports table */}
+                    {!loading && !error && reports.length > 0 && (
+                        <div className="card shadow-sm reports-table">
+                            <div className="card-body p-0">
+                                <div className="table-responsive">
+                                    <table className="table table-striped table-hover mb-0">
+                                        <thead className={theme === 'dark' ? 'table-dark' : 'table-light'}>
+                                            <tr>
+                                                <th>Título</th>
+                                                <th>Departamento</th>
+                                                <th>Localidad</th>
+                                                <th>Tipo</th>
+                                                <th>Fecha</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {reports.map((report) => (
+                                                <tr key={report.id}>
+                                                    <td>
+                                                        <strong>{report.title}</strong>
+                                                        {report.description && (
+                                                            <small className="d-block text-muted">
+                                                                {report.description.length > 50
+                                                                    ? `${report.description.substring(0, 50)}...`
+                                                                    : report.description}
+                                                            </small>
+                                                        )}
+                                                    </td>
+                                                    <td>{getDepartmentName(report.department_id)}</td>
+                                                    <td>{report.locality.name}</td>
+                                                    <td>{getTypeReportName(report.type_report_id)}</td>
+                                                    <td>{formatDate(report.date)}</td>
+                                                    <td>
+                                                        <span className={`badge ${report.status === 'complete' ? 'bg-success text-white' :
+                                                            report.status === 'urgent' ? 'bg-danger text-white' :
+                                                                report.status === 'pending' ? 'bg-warning text-dark' :
+                                                                    'bg-secondary text-white'
+                                                            }`}>
+                                                            {
+                                                                report.status === 'complete' ? 'Completado' :
+                                                                    report.status === 'urgent' ? 'Urgente' :
+                                                                        report.status === 'pending' ? 'Pendiente' :
+                                                                            report.status || 'Sin estado'
+                                                            }
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div className="btn-group btn-group-sm" role="group">
                                                             <button
                                                                 type="button"
-                                                                className="btn btn-outline-danger"
-                                                                onClick={() => handleDeleteReport(report.id)}
-                                                                title="Eliminar informe"
+                                                                className="btn btn-outline-primary"
+                                                                onClick={() => router.push(`/reports/view/${report.id}`)}
+                                                                title="Ver informe"
                                                             >
-                                                                <Trash2 size={15} />
+                                                                <Eye size={15} />
                                                             </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                    </div>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-outline-secondary"
+                                                                onClick={() => router.push(`/reports/edit/${report.id}`)}
+                                                                title="Editar informe"
+                                                            >
+                                                                <Edit size={15} />
+                                                            </button>
+                                                            {(userRole === 'admin' || userRole === 'super_admin') && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-outline-danger"
+                                                                    onClick={() => handleDeleteReport(report.id)}
+                                                                    title="Eliminar informe"
+                                                                >
+                                                                    <Trash2 size={15} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                        )}
+                        </div>
+                    )}
 
-                        {/* Pagination */}
-                        {!loading && !error && totalPages > 1 && (
+                    {/* Pagination */}
+                    {
+                        !loading && !error && totalPages > 1 && (
                             <div className="pagination-container mt-4">
                                 <div className="d-flex justify-content-between align-items-center flex-wrap">
                                     <div className="pagination-info mb-2 mb-md-0">
-                                        Mostrando {((currentPage - 1) * reportsPerPage) + 1} - {Math.min(currentPage * reportsPerPage, totalReports)} de {totalReports} informes
+                                        Mostrando {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, total)} de {total} informes
                                     </div>
                                     <nav aria-label="Paginación de informes">
                                         <ul className="pagination justify-content-center mb-0">
-                                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link"
-                                            onClick={() => handlePageChange(currentPage - 1)}
-                                            disabled={currentPage === 1}
-                                        >
-                                            Anterior
-                                        </button>
-                                    </li>
-                                    
-                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                        let pageNum;
-                                        if (totalPages <= 5) {
-                                            pageNum = i + 1;
-                                        } else if (currentPage <= 3) {
-                                            pageNum = i + 1;
-                                        } else if (currentPage >= totalPages - 2) {
-                                            pageNum = totalPages - 4 + i;
-                                        } else {
-                                            pageNum = currentPage - 2 + i;
-                                        }
-                                        
-                                        return (
-                                            <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
+                                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
                                                 <button
                                                     className="page-link"
-                                                    onClick={() => handlePageChange(pageNum)}
+                                                    onClick={() => handlePageChange(currentPage - 1)}
+                                                    disabled={currentPage === 1}
                                                 >
-                                                    {pageNum}
+                                                    Anterior
                                                 </button>
                                             </li>
-                                        );
-                                    })}
-                                    
-                                    <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                                        <button
-                                            className="page-link"
-                                            onClick={() => handlePageChange(currentPage + 1)}
-                                            disabled={currentPage === totalPages}
-                                        >
-                                            Siguiente
-                                        </button>
-                                    </li>
+
+                                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                let pageNum;
+                                                if (totalPages <= 5) {
+                                                    pageNum = i + 1;
+                                                } else if (currentPage <= 3) {
+                                                    pageNum = i + 1;
+                                                } else if (currentPage >= totalPages - 2) {
+                                                    pageNum = totalPages - 4 + i;
+                                                } else {
+                                                    pageNum = currentPage - 2 + i;
+                                                }
+
+                                                return (
+                                                    <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
+                                                        <button
+                                                            className="page-link"
+                                                            onClick={() => handlePageChange(pageNum)}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    </li>
+                                                );
+                                            })}
+
+                                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                                <button
+                                                    className="page-link"
+                                                    onClick={() => handlePageChange(currentPage + 1)}
+                                                    disabled={currentPage === totalPages}
+                                                >
+                                                    Siguiente
+                                                </button>
+                                            </li>
                                         </ul>
                                     </nav>
                                 </div>
                             </div>
-                        )}
-                    </main>
-                </div>
-        </div>
+                        )
+                    }
+                </main >
+            </div >
+        </div >
     );
 }

@@ -7,14 +7,15 @@ Este sistema de gestión permite la creación, edición, visualización y elimin
 - **Login:** Acceso seguro al sistema.
 - **Index:** Página principal con resumen y enlaces rápidos.
 - **Carga:** Funcionalidad para cargar nuevos informes.
-- **Informes Cargados:** Vista de informes con filtros y opciones de búsqueda.
+- **Informes Cargados:** Vista de informes con filtros avanzados (fecha, departamento, localidad, estado) y opciones de búsqueda manual.
+- **Mapa de Reportes:** Visualización interactiva de reportes geolocalizados con filtros y marcadores múltiples.
 - **Informes Completados/No Completados:** Separación y filtrado de informes según su estado de completitud.
-- **Editar:** Capacidad para editar informes existentes.
-- **Vista de Informes:** Visualización detallada de informes.
+- **Editar:** Capacidad para editar informes existentes, incluyendo la modificación de coordenadas geográficas.
+- **Vista de Informes:** Visualización detallada de informes con ubicación en mapa.
 - **Sistema de Notificaciones:** Notificaciones para informes no completados.
 - **Usuarios:** Gestión de usuarios y roles de acceso.
 - **Roles de Usuarios:** Definición de roles y permisos.
-- **Personas:** Mantenimiento de registros de personas.
+- **Personas:** Mantenimiento de registros de personas con búsqueda avanzada.
 - **Personas por Informes:** Relación entre personas e informes.
 
 ## Requerimientos
