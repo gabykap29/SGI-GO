@@ -36,6 +36,9 @@ func ReportRouter(r *gin.RouterGroup) {
 		localityID, _ := strconv.Atoi(c.DefaultQuery("locality_id", "0"))
 		typeReportID, _ := strconv.Atoi(c.DefaultQuery("type_report_id", "0"))
 		date := c.Query("date")
+		dateFrom := c.Query("date_from")
+		dateTo := c.Query("date_to")
+		status := c.Query("status")
 		content := c.Query("content")
 		description := c.Query("description")
 
@@ -44,6 +47,9 @@ func ReportRouter(r *gin.RouterGroup) {
 			departmentID:   int64(departmentID),
 			localityID:     localityID,
 			date:           date,
+			date_from:      dateFrom,
+			date_to:        dateTo,
+			status:         status,
 			type_report_id: int64(typeReportID),
 			content:        content,
 			description:    description,
@@ -146,8 +152,8 @@ func ReportRouter(r *gin.RouterGroup) {
 			c.JSON(400, gin.H{"error": "ID inválido", "details": err.Error()})
 			return
 		}
-		var report entities.Report
-		if err := c.ShouldBindJSON(&report); err != nil {
+		var input ReportInput
+		if err := c.ShouldBindJSON(&input); err != nil {
 			log.Println(err.Error())
 			c.JSON(400, gin.H{
 				"error":   "Error al actualizar el informe, verifique los campos.",
@@ -155,6 +161,30 @@ func ReportRouter(r *gin.RouterGroup) {
 			})
 			return
 		}
+
+		parsedDate, err := time.Parse("2006-01-02T15:04", input.Date)
+		if err != nil {
+			log.Println(err.Error())
+			c.JSON(400, gin.H{
+				"error":   "Formato de fecha inválido. Debe ser YYYY-MM-DDTHH:MM",
+				"details": err.Error(),
+			})
+			return
+		}
+
+		report := entities.Report{
+			Title:        input.Title,
+			Description:  input.Description,
+			Content:      input.Content,
+			Status:       input.Status,
+			Date:         parsedDate,
+			DepartmentID: input.DepartmentID,
+			LocalityID:   input.LocalityID,
+			TypeReportID: input.TypeReportID,
+			Latitude:     input.Latitude,
+			Longitude:    input.Longitude,
+		}
+
 		result, err := EditReport(int64(id), &report)
 		if err != nil {
 			log.Println(err.Error())

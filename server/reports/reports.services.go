@@ -14,6 +14,9 @@ type query struct {
 	departmentID   int64
 	localityID     int
 	date           string
+	date_from      string
+	date_to        string
+	status         string
 	type_report_id int64
 	content        string
 	description    string
@@ -35,6 +38,15 @@ func GetReports(query *query, page int64, limit int64) ([]entities.Report, int64
 	}
 	if query.date != "" {
 		filters = filters.Where("date =?", query.date)
+	}
+	if query.date_from != "" {
+		filters = filters.Where("date >= ?", query.date_from)
+	}
+	if query.date_to != "" {
+		filters = filters.Where("date <= ?", query.date_to)
+	}
+	if query.status != "" {
+		filters = filters.Where("status = ?", query.status)
 	}
 	if query.type_report_id != 0 {
 		filters = filters.Where("type_report_id =?", query.type_report_id)
@@ -101,6 +113,8 @@ func EditReport(id int64, report *entities.Report) (*entities.Report, error) {
 	existingReport.Content = report.Content
 	existingReport.Description = report.Description
 	existingReport.Status = report.Status
+	existingReport.Latitude = report.Latitude
+	existingReport.Longitude = report.Longitude
 
 	result = database.DB.Save(&existingReport)
 	if result.Error != nil {
