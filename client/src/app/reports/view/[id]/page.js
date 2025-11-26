@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { Toaster } from 'sonner';
+import dynamic from 'next/dynamic';
 import { Sidebar } from '../../../../../components/Sidebard';
 import { Header } from '../../../../../components/Header';
 import { AddPersonModal } from '../../../../../components/AddPersonModal';
@@ -23,9 +24,14 @@ import { PersonsLinkedCard } from './components/PersonsLinkedCard';
 import { EditReportModal } from './components/EditReportModal';
 import { ImageViewModal } from './components/ImageViewModal';
 import { PersonDetailsModal } from './components/PersonDetailsModal';
-
 import { useSidebar } from './hooks/useSidebar';
 import "./style.css"
+
+// Importación dinámica del mapa para evitar SSR
+const SectionMaps = dynamic(() => import('./components/SectionMaps'), {
+    ssr: false,
+    loading: () => <div className="text-center p-4">Cargando mapa...</div>
+});
 
 const BOOTSTRAP_CSS = "https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css";
 const BOOTSTRAP_ICONS = "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css";
@@ -55,6 +61,8 @@ export default function VisualizarInforme() {
     useEffect(() => {
         if (report?.persons && Array.isArray(report.persons)) {
             setReportPersons(report.persons);
+            console.log(report);
+
         }
     }, [report]);
 
@@ -164,6 +172,11 @@ export default function VisualizarInforme() {
                                 />
                             </div>
                         </div>
+                        {report?.latitude && report?.longitude && (
+                            <div className="col-12 col-lg-8">
+                                <SectionMaps latitude={report.latitude} longitude={report.longitude} title={report.title} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

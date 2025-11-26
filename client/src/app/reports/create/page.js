@@ -39,7 +39,10 @@ export default function CreateReportPage() {
     status: '',
     title: '',
     content: '',
-    description: ''
+    description: '',
+    coordinates: '',
+    latitude: '',
+    longitude: ''
   });
 
 
@@ -136,7 +139,26 @@ export default function CreateReportPage() {
     console.log('Datos del formulario:', formData);
 
     try {
-      const result = await CreateReport(formData);
+      // Parsear coordenadas si están presentes
+
+      if (formData.coordinates && formData.coordinates.trim()) {
+        console.log('Coordenadas:', formData.coordinates);
+        const coords = formData.coordinates.split(',').map(coord => coord.trim());
+        console.log('Coordenadas parseadas:', coords);
+        if (coords.length === 2) {
+          const latitude = parseFloat(coords[0]);
+          const longitude = parseFloat(coords[1]);
+          console.log('Latitud:', latitude);
+          console.log('Longitud:', longitude);
+          formData.latitude = latitude;
+          formData.longitude = longitude;
+        }
+      }
+      let reportData = { ...formData };
+      // Eliminar el campo coordinates del objeto a enviar
+      delete reportData.coordinates;
+
+      const result = await CreateReport(reportData);
       if (!result) {
         handleError('Error al crear el informe. Por favor, intente nuevamente.');
         return;
@@ -454,6 +476,28 @@ export default function CreateReportPage() {
                               Contenido del Informe *
                             </label>
                           </div>
+                        </div>
+
+                        {/* Quinta fila - Coordenadas */}
+                        <div className="col-12">
+                          <div className="form-floating">
+                            <input
+                              type="text"
+                              className="form-control"
+                              id="coordinates"
+                              name="coordinates"
+                              value={formData.coordinates}
+                              onChange={handleInputChange}
+                              placeholder="Ejemplo: -26.165137901403824, -58.19673563857925"
+                            />
+                            <label htmlFor="coordinates" style={{ color: isDark ? '#ffffff' : 'inherit' }}>
+                              <MapPin size={16} className="me-1" />
+                              Coordenadas (Latitud, Longitud)
+                            </label>
+                          </div>
+                          <small className={`form-text ${isDark ? 'text-muted' : 'text-muted'}`}>
+                            Formato: latitud, longitud (Ejemplo: -26.165137, -58.196735)
+                          </small>
                         </div>
 
                         {/* Quinta fila - Descripción */}

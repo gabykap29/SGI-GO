@@ -42,15 +42,17 @@ func CreateTypeReportDefault() error {
 	}
 	if count > 0 {
 		log.Println("Los tipos de reportes ya se encuentran cargados!")
-	}
-	for _, element := range list {
-		typeReport := entities.TypeReport{Name: element}
-		if err := database.DB.Create(&typeReport).Error; err != nil {
-			return err
+		return nil // EVITAR DUPLICADOS
+	} else {
+		for _, element := range list {
+			typeReport := entities.TypeReport{Name: element}
+			if err := database.DB.Create(&typeReport).Error; err != nil {
+				return err
+			}
 		}
+		log.Println("Los tipos de reportes se cargaron correctamente!")
+		return nil
 	}
-	log.Println("Los tipos de reportes se cargaron correctamente!")
-	return nil
 }
 func AddTypeReport(typeReport *entities.TypeReport) (*entities.TypeReport, error) {
 	if typeReport.Name == "" {

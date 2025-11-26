@@ -11,10 +11,12 @@
   "dependencies": {
     "bootstrap": "^5.3.7",
     "dayjs": "^1.11.13",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.517.0",
     "next": "15.3.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.0.0-rc.1",
+    "react-dom": "19.0.0-rc.1",
+    "react-leaflet": "5.0.0-rc.2",
     "sonner": "^2.0.5"
   },
   "devDependencies": {

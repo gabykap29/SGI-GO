@@ -1,6 +1,9 @@
 package reports
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"log"
 	utils_auth "sgi-go/auth/utils"
 	"sgi-go/entities"
@@ -12,14 +15,16 @@ import (
 )
 
 type ReportInput struct {
-	Title        string `json:"title" binding:"required"`
-	Description  string `json:"description" binding:"required"`
-	Content      string `json:"content"`
-	Status       string `json:"status"`
-	Date         string `json:"date" binding:"required"`
-	DepartmentID uint   `json:"department_id" binding:"required"`
-	LocalityID   uint   `json:"locality_id" binding:"required"`
-	TypeReportID uint   `json:"type_report_id" binding:"required"`
+	Title        string  `json:"title" binding:"required"`
+	Description  string  `json:"description" binding:"required"`
+	Content      string  `json:"content"`
+	Status       string  `json:"status"`
+	Date         string  `json:"date" binding:"required"`
+	DepartmentID uint    `json:"department_id" binding:"required"`
+	LocalityID   uint    `json:"locality_id" binding:"required"`
+	TypeReportID uint    `json:"type_report_id" binding:"required"`
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
 }
 
 func ReportRouter(r *gin.RouterGroup) {
@@ -58,6 +63,9 @@ func ReportRouter(r *gin.RouterGroup) {
 
 	r.POST("/reports", func(c *gin.Context) {
 		var input ReportInput
+		body, _ := c.GetRawData()
+		log.Printf("JSON recibido: %s", string(body))
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 		if err := c.ShouldBindJSON(&input); err != nil {
 			log.Println(err.Error())
 			c.JSON(400, gin.H{
@@ -86,7 +94,7 @@ func ReportRouter(r *gin.RouterGroup) {
 			})
 			return
 		}
-
+		fmt.Println(input)
 		// Mapear al modelo real
 		report := entities.Report{
 			Title:        input.Title,
@@ -97,6 +105,8 @@ func ReportRouter(r *gin.RouterGroup) {
 			DepartmentID: input.DepartmentID,
 			LocalityID:   input.LocalityID,
 			TypeReportID: input.TypeReportID,
+			Latitude:     input.Latitude,
+			Longitude:    input.Longitude,
 		}
 
 		result, err := AddReport(&report, token)

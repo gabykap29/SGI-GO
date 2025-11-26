@@ -22,4 +22,6 @@ type Report struct {
 	UserID      uint     `json:"user_id"`
 	Status      string   `json:"status" gorm:"not null" default:"pending"` // Estados válidos: pending, complete, urgent
 	User        User     `json:"user" gorm:"foreignKey:UserID;references:ID" binding:"-"`
+	Latitude    float64  `json:"latitude" gorm:"optional"`
+	Longitude   float64  `json:"longitude" gorm:"optional"`
 }
