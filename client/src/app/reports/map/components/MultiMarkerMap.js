@@ -1,23 +1,23 @@
 "use client"
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-const icon = L.icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-});
-
 const DynamicMap = dynamic(
-    () => import('react-leaflet').then((mod) => ({
-        default: function MapWrapper({ reports }) {
-            const { MapContainer, TileLayer, Marker, Popup } = mod;
+    async () => {
+        const L = await import('leaflet');
+        const { MapContainer, TileLayer, Marker, Popup } = await import('react-leaflet');
 
+        // Fix icon issues
+        const icon = L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
+        });
+
+        return function MapWrapper({ reports }) {
             // Posición por defecto (centro de Formosa, Argentina aproximadamente)
             const defaultCenter = [-26.177319, -58.196097];
 
@@ -70,10 +70,10 @@ const DynamicMap = dynamic(
                                     <p className="mb-2 small">
                                         <strong>Estado:</strong>{' '}
                                         <span className={`badge ${report.status === 'complete' || report.status === 'completed' ? 'bg-success' :
-                                                report.status === 'urgent' || report.status === 'urgente' ? 'bg-danger' :
-                                                    report.status === 'pending' || report.status === 'pendiente' ? 'bg-warning' :
-                                                        report.status === 'in_progress' || report.status === 'en proceso' ? 'bg-info' :
-                                                            'bg-secondary'
+                                            report.status === 'urgent' || report.status === 'urgente' ? 'bg-danger' :
+                                                report.status === 'pending' || report.status === 'pendiente' ? 'bg-warning' :
+                                                    report.status === 'in_progress' || report.status === 'en proceso' ? 'bg-info' :
+                                                        'bg-secondary'
                                             }`}>
                                             {report.status === 'complete' || report.status === 'completed' ? 'Completado' :
                                                 report.status === 'urgent' || report.status === 'urgente' ? 'Urgente' :
@@ -96,8 +96,8 @@ const DynamicMap = dynamic(
                     ))}
                 </MapContainer>
             );
-        }
-    })),
+        };
+    },
     {
         ssr: false,
         loading: () => (
