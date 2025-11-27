@@ -296,7 +296,7 @@ export default function DashboardInicio() {
                       <h5 className="mb-0 fw-bold" style={{ color: isDark ? '#ffffff' : '#0d6efd' }}>
                         Últimos Informes Cargados
                       </h5>
-                      <button className={`btn ${isDark ? 'btn-light' : 'btn-dark'} btn-sm`}>
+                      <button className={`btn ${isDark ? 'btn-light' : 'btn-dark'} btn-sm`} onClick={() => router.push('/reports/list')}>
                         Ver Todos
                       </button>
                     </div>
